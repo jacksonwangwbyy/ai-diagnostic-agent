@@ -1,0 +1,31 @@
+# LLM Frameworks
+langchain>=0.3
+langchain-anthropic>=0.3
+langchain-openai>=0.3
+langchain-community>=0.3
+
+# Web Framework
+fastapi>=0.115
+uvicorn>=0.34
+
+# Vector Database
+chromadb>=0.5
+
+# Document Processing
+pypdf>=5.0
+unstructured>=0.16
+
+# Embedding
+tiktoken>=0.8
+
+# SSH
+paramiko>=3.5
+
+# Utils
+python-dotenv>=1.0
+pydantic>=2.0
+httpx>=0.28
+
+# Testing
+pytest>=8.0
+pytest-asyncio>=0.24
