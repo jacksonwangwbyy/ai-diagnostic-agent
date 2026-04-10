@@ -146,22 +146,25 @@ ai-diagnostic-agent/
 ├── scripts/                       # 脚本（知识库构建、数据导入等）
 ├── .env.example                   # 环境变量模板
 ├── requirements.txt               # Python 依赖
-├── docker-compose.yml             # Docker 部署
+├── docker-compose.yml             # Docker 部署（Phase 4）
 └── README.md                      # 项目说明
 ```
 
 ## 6. 现状与蓝图
 
-### 现状（你现在的位置）
+### 现状（Phase 1 & 2 已完成）
 - ✅ Java 后端开发 3 年，Spring Boot / 微服务 / DevOps 扎实
 - ✅ Python 有实战经验（FastAPI 中间件、Socket.IO 服务）
 - ✅ 有真实的 IoT 设备系统和数据源
-- ✅ 有 Claude 和 OpenAI 的 API key
-- ❌ 没有 RAG 系统开发经验
-- ❌ 没有 LLM Agent 开发经验
-- ❌ 没有向量数据库使用经验
-- ❌ 没有 LangChain 等 AI 框架经验
-- ❌ Prompt Engineering 停留在日常使用级别
+- ✅ 有 Claude 和 OpenAI 的 API key（通过中转站）
+- ✅ LangChain 核心概念掌握（ChatModel、消息类型、Prompt Template）
+- ✅ Claude / OpenAI 双模型接入与切换
+- ✅ 流式输出、多轮对话已实现
+- ✅ RAG pipeline 已跑通（文档加载 → 切分 → Embedding → ChromaDB 检索 → 生成）
+- ✅ 14 个真实设备文档已导入知识库（434 个文档块）
+- 🔄 Agent 开发（Phase 3 进行中）
+- ❌ 向量数据库迁移（Milvus）
+- ❌ 生产化部署（FastAPI + Docker）
 
 ### 蓝图（完成后你的位置）
 - ✅ 掌握 LangChain 框架，能独立开发 LLM 应用

@@ -9,8 +9,9 @@
 ## 技术栈
 
 - **Python 3.11+** / **LangChain** / **FastAPI**
-- **Claude API** + **OpenAI API**（多模型切换）
+- **Claude API** + **OpenAI API**（多模型切换，通过中转站代理）
 - **ChromaDB**（开发）→ **Milvus**（生产）
+- **HuggingFace Embedding**（本地）/ **OpenAI Embedding**（API）
 - **Docker** 容器化部署
 
 ## 项目结构
@@ -18,22 +19,38 @@
 ```
 ai-diagnostic-agent/
 ├── src/                           # 源代码
-│   ├── config/                    # 配置管理（API keys、模型参数）
-│   ├── llm/                       # LLM 接入层（多模型管理）
-│   ├── rag/                       # RAG 模块（文档加载、切分、检索）
-│   ├── agent/                     # Agent 模块（工具编排、推理链）
-│   ├── tools/                     # 工具实现（SSH日志、设备查询等）
-│   ├── api/                       # FastAPI 接口层
-│   └── utils/                     # 工具函数
+│   ├── config/                    # 配置管理
+│   │   └── settings.py            # .env 加载 & Settings 类
+│   ├── llm/                       # LLM 接入层
+│   │   └── client.py              # 多模型客户端 + DiagnosticChat
+│   ├── rag/                       # RAG 模块
+│   │   ├── loader.py              # 文档加载器（MD/PDF/TXT）
+│   │   ├── splitter.py            # 文本切分（标题切分+字符切分）
+│   │   ├── vectorstore.py         # ChromaDB 向量存储与检索
+│   │   └── chain.py               # RAG 检索链（检索+生成+引用）
+│   ├── agent/                     # Agent 模块
+│   │   └── diagnostic_agent.py    # ReAct Agent（工具编排+多步推理）
+│   ├── tools/                     # 工具实现
+│   │   ├── knowledge_search.py    # 知识库检索工具
+│   │   ├── log_reader.py          # SSH 设备日志读取工具
+│   │   ├── device_status.py       # 设备状态查询工具
+│   │   └── diagnosis_report.py    # 诊断报告生成工具
+│   ├── api/                       # FastAPI 接口
+│   │   ├── app.py                 # FastAPI 应用入口
+│   │   ├── models.py              # 请求/响应数据模型
+│   │   └── routes.py              # API 路由（REST + SSE）
+│   ├── utils/                     # 工具函数
+│   └── main.py                    # CLI 入口
 ├── knowledge-base/                # 知识库原始文档
-│   ├── device-manuals/            # 设备手册（PDF/MD）
+│   ├── device-manuals/            # 设备手册（14 个文档）
 │   └── fault-cases/               # 历史故障案例
+├── scripts/
+│   └── build_knowledge_base.py    # 一键构建知识库脚本
 ├── tests/                         # 测试
-├── scripts/                       # 脚本（知识库构建等）
 ├── docs/                          # 文档 & 学习笔记
 ├── .env.example                   # 环境变量模板
 ├── requirements.txt               # Python 依赖
-└── docker-compose.yml             # Docker 部署
+└── .gitignore
 ```
 
 ---
@@ -45,8 +62,8 @@ ai-diagnostic-agent/
 - ✅ Java 后端 3 年（Spring Boot 3.x / Java 21 / 微服务）
 - ✅ Python 实战经验（FastAPI 中间件、Socket.IO 服务）
 - ✅ 真实 IoT 设备系统和数据源（SSH 可达）
-- ✅ Claude / OpenAI API key
-- ❌ RAG / Agent / Function Calling / 向量数据库 / LangChain
+- ✅ Claude / OpenAI API key（通过中转站）
+- 🔄 正在学习 RAG / Agent / Function Calling / 向量数据库 / LangChain
 
 ### 🎯 目标位置
 
@@ -54,69 +71,72 @@ ai-diagnostic-agent/
 
 ---
 
-### Phase 1 — LLM 基础接入
+### Phase 1 — LLM 基础接入 ✅
 
 > 理解 LLM API 调用原理，用 LangChain 完成基础对话
 
-- [ ] LangChain 核心概念（Chain、Prompt Template、Output Parser）
-- [ ] 接入 Claude API（langchain-anthropic）
-- [ ] 接入 OpenAI API（langchain-openai）
-- [ ] 多模型切换机制（通过配置切换 provider）
-- [ ] Prompt Engineering（角色设定、Few-shot、CoT）
-- [ ] 流式输出（Streaming）
-- [ ] 多轮对话（对话历史管理）
+- [x] LangChain 核心概念（ChatModel、消息类型）
+- [x] 接入 Claude API（langchain-anthropic + 中转站）
+- [x] 接入 OpenAI API（langchain-openai + 中转站）
+- [x] 多模型切换机制（通过配置切换 provider）
+- [x] Prompt Engineering（设备故障诊断系统提示词）
+- [x] 流式输出（Streaming + extended thinking 兼容）
+- [x] 多轮对话（对话历史管理）
 
-**交付**：一个支持多模型切换的设备故障诊断对话 CLI
+**交付**：CLI 对话工具 `python -m src.main`，支持 `/switch`、`/clear` 命令
 
 ---
 
-### Phase 2 — RAG 知识库
+### Phase 2 — RAG 知识库 ✅
 
 > 构建设备手册 + 历史故障案例知识库，实现检索增强问答
 
-- [ ] 文档加载器（PDF、Markdown、文本）
-- [ ] 文本切分策略（chunk_size / overlap / 语义切分）
-- [ ] Embedding 模型选型与使用
-- [ ] ChromaDB 向量存储与相似度检索
-- [ ] 检索质量优化（Top-K、Reranking、元数据过滤）
-- [ ] RAG 评估（检索准确率、回答质量）
-- [ ] 导入真实设备文档到知识库
+- [x] 文档加载器（Markdown、PDF、TXT）
+- [x] 文本切分策略（Markdown 标题切分 + 递归字符切分，chunk_size=800）
+- [x] Embedding 模型（HuggingFace 本地 all-MiniLM-L6-v2 + OpenAI API 可选）
+- [x] ChromaDB 向量存储与相似度检索
+- [x] 导入 14 个真实设备文档 → 434 个文档块
+- [x] RAG 问答链（检索 + Prompt 拼接 + LLM 生成 + 引用溯源）
+- [ ] 检索质量优化（Reranking、混合检索 — 留待 Phase 4）
+- [ ] RAG 评估（检索准确率、回答质量 — 留待 Phase 4）
 
-**交付**：输入故障问题 → 检索相关文档 → 生成带引用的回答
+**交付**：一键构建知识库 `python scripts/build_knowledge_base.py --local`
 
 ---
 
-### Phase 3 — Agent & Function Calling
+### Phase 3 — Agent & Function Calling ✅
 
 > 构建能自主调用工具、多步推理的诊断 Agent
 
-- [ ] Function Calling / Tool Use 机制
-- [ ] 工具定义与注册（@tool）
-- [ ] 实现 fetch_device_logs（SSH 读取真实日志）
-- [ ] 实现 query_device_status（调用 bar-deploy 接口）
-- [ ] 实现 search_knowledge_base（RAG 检索）
-- [ ] 实现 generate_diagnosis_report（结构化报告）
-- [ ] ReAct 推理模式（Thought → Action → Observation）
-- [ ] 多工具协作编排
-- [ ] Agent 执行过程可视化
+- [x] Function Calling / Tool Use 机制（LangGraph ReAct Agent）
+- [x] 工具定义与注册（@tool 装饰器）
+- [x] 实现 fetch_device_logs（SSH 读取真实日志）
+- [x] 实现 query_device_status（设备状态查询，含模拟数据）
+- [x] 实现 search_knowledge_base（RAG 检索）
+- [x] 实现 generate_diagnosis_report（结构化报告）
+- [x] ReAct 推理模式（LangGraph create_react_agent）
+- [x] 多工具协作编排（4 工具自主调度）
+- [x] Agent 执行过程可视化（CLI verbose 模式）
 
-**交付**：输入故障描述 → Agent 自主推理 → 调用工具 → 输出诊断报告
+**交付**：`python -m src.main` Agent 模式，支持 `/agent` 和 `/chat` 切换
 
 ---
 
-### Phase 4 — 生产化
+### Phase 4 — 生产化 ✅
 
 > 包装为可部署的服务，体现工程化能力
 
-- [ ] FastAPI 服务化（REST + WebSocket）
-- [ ] ChromaDB → Milvus 迁移
-- [ ] 多模型负载与降级策略
-- [ ] 对话历史持久化
-- [ ] 流式输出（SSE）
-- [ ] Docker 容器化部署
-- [ ] API 文档（Swagger）
+- [x] FastAPI 服务化（REST + SSE 流式）
+- [x] API 端点：对话、Agent 诊断、RAG 检索、会话管理
+- [x] 流式输出（SSE，Server-Sent Events）
+- [x] API 文档（Swagger，访问 /docs）
+- [x] Docker 容器化（Dockerfile + docker-compose.yml）
+- [x] Milvus 集成（docker-compose 中配置）
+- [ ] ChromaDB → Milvus 迁移（向量存储切换）
+- [ ] 多模型降级策略（provider A 失败自动切 B）
+- [ ] 对话历史持久化（当前内存存储，可切 Redis）
 
-**交付**：完整可部署的 AI 诊断服务
+**交付**：`uvicorn src.api.app:app` 或 `docker compose up`
 
 ---
 
@@ -124,25 +144,51 @@ ai-diagnostic-agent/
 
 ```bash
 # 1. 克隆项目
-cd "D:/software project/ai-diagnostic-agent"
+git clone https://github.com/jacksonwangwbyy/ai-diagnostic-agent.git
+cd ai-diagnostic-agent
 
 # 2. 创建虚拟环境
 python -m venv .venv
-source .venv/Scripts/activate  # Windows Git Bash
+.venv/Scripts/activate      # Windows
+# source .venv/bin/activate  # Linux/Mac
 
 # 3. 安装依赖
 pip install -r requirements.txt
 
 # 4. 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入你的 API keys
+# 编辑 .env，填入 API keys 和中转站地址
 
-# 5. 开始 Phase 1
-# （后续每个 Phase 会有具体的运行说明）
+# 5. 构建知识库
+python scripts/build_knowledge_base.py --local
+
+# 6a. CLI 模式（Agent 对话）
+python -m src.main
+
+# 6b. API 服务模式
+uvicorn src.api.app:app --reload --port 8000
+# 访问 http://localhost:8000/docs 查看 Swagger 文档
+
+# 6c. Docker 部署（含 Milvus）
+docker compose up -d
 ```
+
+## API 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/chat` | 普通对话（非流式） |
+| POST | `/api/chat/stream` | 普通对话（SSE 流式） |
+| POST | `/api/diagnose` | Agent 故障诊断 |
+| POST | `/api/diagnose/stream` | Agent 诊断（SSE 流式） |
+| POST | `/api/rag/query` | RAG 知识库检索 |
+| GET | `/api/sessions` | 列出活跃会话 |
+| DELETE | `/api/session/{id}` | 清除会话 |
+| GET | `/health` | 健康检查 |
+| GET | `/docs` | Swagger 文档 |
 
 ## 数据源
 
 - 设备日志：`ssh smyze@192.168.42.1`（真实饮吧设备主机）
-- 设备手册：`knowledge-base/device-manuals/`
+- 设备手册：`knowledge-base/device-manuals/`（14 个文档）
 - 故障案例：`knowledge-base/fault-cases/`
