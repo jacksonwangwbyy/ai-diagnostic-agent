@@ -6,13 +6,23 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
     volumes:
-      # 持久化 ChromaDB 数据
       - ./chroma_data:/app/chroma_data
-      # 持久化知识库
       - ./knowledge-base:/app/knowledge-base
     depends_on:
+      - redis
       - milvus
+    restart: unless-stopped
+
+  # Redis（对话历史持久化）
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
 
   # Milvus 向量数据库（生产级）
@@ -29,4 +39,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  redis_data:
   milvus_data:

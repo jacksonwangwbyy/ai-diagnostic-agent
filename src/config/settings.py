@@ -43,5 +43,9 @@ class Settings:
     # Bar Deploy Server
     BAR_DEPLOY_SERVER_URL: str = os.getenv("BAR_DEPLOY_SERVER_URL", "http://localhost:8080")
 
+    # Redis（对话历史持久化）
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    SESSION_TTL: int = int(os.getenv("SESSION_TTL", "3600"))  # 会话过期时间（秒）
+
 
 settings = Settings()

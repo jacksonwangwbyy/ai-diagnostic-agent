@@ -4,7 +4,7 @@ API 路由
 学习要点：
 1. APIRouter - 模块化路由管理
 2. SSE (StreamingResponse) - 流式输出，前端可以逐 token 展示
-3. 会话管理 - 通过 session_id 维护多轮对话历史
+3. 会话管理 - Redis 持久化（降级到内存），通过 session_id 维护多轮对话
 4. 错误处理 - 统一的错误响应格式
 """
 import json
@@ -17,21 +17,14 @@ from src.api.models import (
     DiagnoseRequest, DiagnoseResponse,
     RAGQueryRequest, RAGQueryResponse,
 )
-from src.llm.client import DiagnosticChat
 from src.rag.chain import rag_query
 from src.agent.diagnostic_agent import create_diagnostic_agent
+from src.utils.session_store import create_session_store
 
 router = APIRouter()
 
-# 会话存储（内存，生产环境应改用 Redis）
-_sessions: dict[str, DiagnosticChat] = {}
-
-
-def _get_session(session_id: str, provider: str) -> DiagnosticChat:
-    """获取或创建会话"""
-    if session_id not in _sessions:
-        _sessions[session_id] = DiagnosticChat(provider)
-    return _sessions[session_id]
+# 会话存储（优先 Redis，连接失败自动降级到内存）
+_store = create_session_store()
 
 
 # ==================== 普通对话 ====================
@@ -40,8 +33,11 @@ def _get_session(session_id: str, provider: str) -> DiagnosticChat:
 async def chat(req: ChatRequest):
     """普通对话（非流式）"""
     try:
-        session = _get_session(req.session_id, req.provider)
+        session = _store.get(req.session_id, req.provider)
         answer = session.chat(req.message)
+        # 对话后保存到 Redis
+        if hasattr(_store, 'save'):
+            _store.save(req.session_id)
         return ChatResponse(
             answer=answer,
             provider=session.provider_name,
@@ -53,21 +49,17 @@ async def chat(req: ChatRequest):
 
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest):
-    """
-    普通对话（SSE 流式输出）
-
-    学习要点：
-    - StreamingResponse + text/event-stream = SSE
-    - 每个 token 作为一个 SSE event 发送
-    - 前端用 EventSource API 接收
-    """
-    session = _get_session(req.session_id, req.provider)
+    """普通对话（SSE 流式输出）"""
+    session = _store.get(req.session_id, req.provider)
 
     async def event_generator():
         try:
             for token in session.stream_chat(req.message):
                 yield f"data: {json.dumps({'token': token}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'done': True})}\n\n"
+            # 流式结束后保存
+            if hasattr(_store, 'save'):
+                _store.save(req.session_id)
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
@@ -81,11 +73,7 @@ async def chat_stream(req: ChatRequest):
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
 async def diagnose(req: DiagnoseRequest):
-    """
-    Agent 诊断（工具调用 + 多步推理）
-
-    Agent 会自动决定调用哪些工具来诊断问题。
-    """
+    """Agent 诊断（工具调用 + 多步推理）"""
     try:
         agent = create_diagnostic_agent(req.provider)
         result = agent.invoke({
@@ -94,7 +82,6 @@ async def diagnose(req: DiagnoseRequest):
 
         messages = result["messages"]
 
-        # 提取推理步骤和使用的工具
         tools_used = []
         steps = []
         for msg in messages:
@@ -114,7 +101,6 @@ async def diagnose(req: DiagnoseRequest):
                     "result": msg.content[:300],
                 })
 
-        # 最终回答
         final_content = messages[-1].content
         if isinstance(final_content, list):
             final_content = "".join(
@@ -188,8 +174,8 @@ async def rag_search(req: RAGQueryRequest):
 @router.delete("/session/{session_id}")
 async def clear_session(session_id: str):
     """清除指定会话的历史"""
-    if session_id in _sessions:
-        del _sessions[session_id]
+    deleted = _store.delete(session_id)
+    if deleted:
         return {"message": f"会话 {session_id} 已清除"}
     return {"message": f"会话 {session_id} 不存在"}
 
@@ -197,9 +183,4 @@ async def clear_session(session_id: str):
 @router.get("/sessions")
 async def list_sessions():
     """列出所有活跃会话"""
-    return {
-        "sessions": [
-            {"id": sid, "provider": s.provider_name, "history_count": len(s.history)}
-            for sid, s in _sessions.items()
-        ]
-    }
+    return {"sessions": _store.list_sessions()}
