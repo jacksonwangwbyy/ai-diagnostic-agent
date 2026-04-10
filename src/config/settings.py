@@ -25,7 +25,10 @@ class Settings:
     CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
 
-    # SSH
+    # 日志读取模式: "local"（本地文件）或 "ssh"（远程 SSH）
+    LOG_READ_MODE: str = os.getenv("LOG_READ_MODE", "local")
+
+    # SSH（仅 LOG_READ_MODE=ssh 时使用）
     DEVICE_SSH_HOST: str = os.getenv("DEVICE_SSH_HOST", "192.168.42.1")
     DEVICE_SSH_USER: str = os.getenv("DEVICE_SSH_USER", "smyze")
     DEVICE_SSH_KEY_PATH: str = os.getenv("DEVICE_SSH_KEY_PATH", "~/.ssh/id_rsa")

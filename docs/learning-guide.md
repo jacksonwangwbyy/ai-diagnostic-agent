@@ -333,9 +333,54 @@ def search_knowledge_base(query: str) -> str:
 | 工具 | 作用 | 数据来源 |
 |------|------|----------|
 | `query_device_status` | 查设备实时状态 | 模拟数据（后续接真实 API） |
-| `fetch_device_logs` | SSH 读取设备日志 | 真实 SSH 连接 |
+| `fetch_device_logs` | 读取设备日志 | 本地文件 / SSH（可配置） |
 | `search_knowledge_base` | 检索知识库 | ChromaDB 向量检索 |
 | `generate_diagnosis_report` | 生成诊断报告 | 格式化输出 |
+
+### 日志读取的双模式设计 (`log_reader.py`)
+
+`fetch_device_logs` 支持两种读取模式，通过 `.env` 中的 `LOG_READ_MODE` 切换：
+
+```bash
+# .env
+LOG_READ_MODE=local   # 同机部署，直接读本地文件
+# LOG_READ_MODE=ssh   # 跨机部署，通过 SSH 远程读取
+```
+
+本地模式直接读文件，简单高效：
+
+```python
+def _read_local(log_type: str, lines: int, keyword: str) -> str:
+    log_path = Path(LOG_PATHS[log_type])
+    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+        all_lines = f.readlines()
+    if keyword:
+        all_lines = [l for l in all_lines if keyword.lower() in l.lower()]
+    return "".join(all_lines[-lines:])
+```
+
+SSH 模式通过 subprocess 调用 ssh 命令远程读取：
+
+```python
+def _read_ssh(log_type: str, lines: int, keyword: str) -> str:
+    remote_cmd = f"tail -n {lines} {LOG_PATHS[log_type]}"
+    ssh_cmd = ["ssh", f"{settings.DEVICE_SSH_USER}@{settings.DEVICE_SSH_HOST}", remote_cmd]
+    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)
+    return result.stdout
+```
+
+工具入口根据配置自动选择：
+
+```python
+@tool
+def fetch_device_logs(log_type="syslog", lines=50, keyword="") -> str:
+    if settings.LOG_READ_MODE == "local":
+        return _read_local(log_type, lines, keyword)
+    else:
+        return _read_ssh(log_type, lines, keyword)
+```
+
+> 同机部署时用 `local` 模式：不需要 SSH 配置，读取更快，少一个故障点。
 
 ### 创建 Agent
 

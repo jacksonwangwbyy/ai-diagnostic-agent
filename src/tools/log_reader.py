@@ -2,54 +2,72 @@
 工具：设备日志读取
 
 学习要点：
-1. 工具可以调用外部系统（SSH）—— 这是 Agent 的核心能力
-2. 参数校验 - 通过 docstring 定义参数类型和说明
+1. 支持两种模式：本地文件读取（同机部署）和 SSH 远程读取
+2. 通过 LOG_READ_MODE 配置项切换，代码逻辑完全隔离
 3. 错误处理 - 工具调用失败时要返回可理解的错误信息，而不是抛异常
 """
 import subprocess
+from pathlib import Path
 from langchain_core.tools import tool
 from src.config.settings import settings
 
+# 日志路径映射
+LOG_PATHS = {
+    "syslog": "/var/log/syslog",
+    "middleware": "/home/smyze/bar_middleware/logs/app.log",
+    "deploy": "/home/smyze/bar-deploy-client/logs/app.log",
+    "docker": None,  # 特殊处理
+}
 
-@tool
-def fetch_device_logs(
-    log_type: str = "syslog",
-    lines: int = 50,
-    keyword: str = "",
-) -> str:
-    """通过 SSH 读取饮吧设备的运行日志。
-    当需要查看设备的实时日志、错误日志、历史运行记录来排查故障时使用此工具。
 
-    Args:
-        log_type: 日志类型。可选值:
-            - "syslog": 系统日志（默认）
-            - "middleware": 中间件日志（bar_middleware）
-            - "deploy": 部署客户端日志（bar-deploy-client）
-            - "docker": Docker 容器日志
-        lines: 读取的日志行数，默认 50
-        keyword: 过滤关键词，只返回包含该关键词的日志行，留空表示不过滤
-    """
-    # 构造远程命令
-    log_paths = {
-        "syslog": "/var/log/syslog",
-        "middleware": "/home/smyze/bar_middleware/logs/app.log",
-        "deploy": "/home/smyze/bar-deploy-client/logs/app.log",
-        "docker": None,  # 特殊处理
-    }
+def _read_local(log_type: str, lines: int, keyword: str) -> str:
+    """本地模式：直接读取文件"""
+    if log_type == "docker":
+        try:
+            result = subprocess.run(
+                ["docker", "logs", "--tail", str(lines)],
+                capture_output=True, text=True, timeout=15,
+            )
+            output = result.stdout.strip() or result.stderr.strip()
+            return f"[Docker 日志] 最近 {lines} 行:\n\n{output}" if output else "Docker 日志为空"
+        except Exception as e:
+            return f"读取 Docker 日志失败: {e}"
 
-    if log_type not in log_paths:
-        return f"不支持的日志类型: {log_type}。支持: {', '.join(log_paths.keys())}"
+    log_path = Path(LOG_PATHS[log_type])
+    if not log_path.exists():
+        return f"日志文件不存在: {log_path}"
 
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            all_lines = f.readlines()
+
+        if keyword:
+            all_lines = [l for l in all_lines if keyword.lower() in l.lower()]
+
+        recent = all_lines[-lines:]
+        if not recent:
+            return f"日志为空（类型: {log_type}，关键词: '{keyword}'）"
+
+        header = f"[设备日志 - {log_type}] 最近 {lines} 行"
+        if keyword:
+            header += f" (过滤: '{keyword}')"
+        return f"{header}:\n\n{''.join(recent)}"
+
+    except Exception as e:
+        return f"读取日志文件失败: {e}"
+
+
+def _read_ssh(log_type: str, lines: int, keyword: str) -> str:
+    """SSH 模式：远程读取"""
     if log_type == "docker":
         remote_cmd = f"docker logs --tail {lines} $(docker ps -q | head -1) 2>&1"
     else:
-        log_path = log_paths[log_type]
+        log_path = LOG_PATHS[log_type]
         if keyword:
             remote_cmd = f"grep -i '{keyword}' {log_path} | tail -n {lines}"
         else:
             remote_cmd = f"tail -n {lines} {log_path}"
 
-    # 通过 SSH 执行
     ssh_cmd = [
         "ssh",
         "-o", "ConnectTimeout=5",
@@ -59,12 +77,7 @@ def fetch_device_logs(
     ]
 
     try:
-        result = subprocess.run(
-            ssh_cmd,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
+        result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)
 
         if result.returncode != 0:
             error = result.stderr.strip()
@@ -76,11 +89,39 @@ def fetch_device_logs(
         if not output:
             return f"日志为空（类型: {log_type}，关键词: '{keyword}'）"
 
-        return f"[设备日志 - {log_type}] 最近 {lines} 行" + (
-            f" (过滤: '{keyword}')" if keyword else ""
-        ) + f":\n\n{output}"
+        header = f"[设备日志 - {log_type}] 最近 {lines} 行"
+        if keyword:
+            header += f" (过滤: '{keyword}')"
+        return f"{header}:\n\n{output}"
 
     except subprocess.TimeoutExpired:
         return f"SSH 连接超时，设备 {settings.DEVICE_SSH_HOST} 可能无法访问。"
     except FileNotFoundError:
         return "SSH 客户端未找到，请确认系统已安装 SSH。"
+
+
+@tool
+def fetch_device_logs(
+    log_type: str = "syslog",
+    lines: int = 50,
+    keyword: str = "",
+) -> str:
+    """读取饮吧设备的运行日志。
+    当需要查看设备的实时日志、错误日志、历史运行记录来排查故障时使用此工具。
+
+    Args:
+        log_type: 日志类型。可选值:
+            - "syslog": 系统日志（默认）
+            - "middleware": 中间件日志（bar_middleware）
+            - "deploy": 部署客户端日志（bar-deploy-client）
+            - "docker": Docker 容器日志
+        lines: 读取的日志行数，默认 50
+        keyword: 过滤关键词，只返回包含该关键词的日志行，留空表示不过滤
+    """
+    if log_type not in LOG_PATHS:
+        return f"不支持的日志类型: {log_type}。支持: {', '.join(LOG_PATHS.keys())}"
+
+    if settings.LOG_READ_MODE == "local":
+        return _read_local(log_type, lines, keyword)
+    else:
+        return _read_ssh(log_type, lines, keyword)
