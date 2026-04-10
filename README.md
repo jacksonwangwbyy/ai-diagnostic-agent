@@ -32,8 +32,8 @@ ai-diagnostic-agent/
 │   │   └── diagnostic_agent.py    # ReAct Agent（工具编排+多步推理）
 │   ├── tools/                     # 工具实现
 │   │   ├── knowledge_search.py    # 知识库检索工具
-│   │   ├── log_reader.py          # SSH 设备日志读取工具
-│   │   ├── device_status.py       # 设备状态查询工具
+│   │   ├── log_reader.py          # 设备日志读取工具（local/ssh 双模式）
+│   │   ├── device_status.py       # 设备状态查询工具（对接 bar_middleware 真实 API）
 │   │   └── diagnosis_report.py    # 诊断报告生成工具
 │   ├── api/                       # FastAPI 接口
 │   │   ├── app.py                 # FastAPI 应用入口
@@ -48,8 +48,11 @@ ai-diagnostic-agent/
 │   └── build_knowledge_base.py    # 一键构建知识库脚本
 ├── tests/                         # 测试
 ├── docs/                          # 文档 & 学习笔记
+├── frontend/                      # React 前端（Vite + TypeScript + SSE）
 ├── .env.example                   # 环境变量模板
 ├── requirements.txt               # Python 依赖
+├── Dockerfile                     # 后端容器化
+├── docker-compose.yml             # Agent + Milvus 部署
 └── .gitignore
 ```
 

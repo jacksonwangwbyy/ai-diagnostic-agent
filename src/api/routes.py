@@ -17,7 +17,7 @@ from src.api.models import (
     DiagnoseRequest, DiagnoseResponse,
     RAGQueryRequest, RAGQueryResponse,
 )
-from src.llm.client import DiagnosticChat, extract_text
+from src.llm.client import DiagnosticChat
 from src.rag.chain import rag_query
 from src.agent.diagnostic_agent import create_diagnostic_agent
 
