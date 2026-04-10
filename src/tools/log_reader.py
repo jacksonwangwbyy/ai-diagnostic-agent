@@ -24,8 +24,17 @@ def _read_local(log_type: str, lines: int, keyword: str) -> str:
     """本地模式：直接读取文件"""
     if log_type == "docker":
         try:
+            # 先获取第一个运行中的容器 ID
+            ps_result = subprocess.run(
+                ["docker", "ps", "-q", "--no-trunc"],
+                capture_output=True, text=True, timeout=5,
+            )
+            container_id = ps_result.stdout.strip().split("\n")[0] if ps_result.stdout.strip() else ""
+            if not container_id:
+                return "没有运行中的 Docker 容器"
+
             result = subprocess.run(
-                ["docker", "logs", "--tail", str(lines)],
+                ["docker", "logs", "--tail", str(lines), container_id],
                 capture_output=True, text=True, timeout=15,
             )
             output = result.stdout.strip() or result.stderr.strip()

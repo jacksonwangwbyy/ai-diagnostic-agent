@@ -13,7 +13,6 @@ services:
       - ./knowledge-base:/app/knowledge-base
     depends_on:
       - redis
-      - milvus
     restart: unless-stopped
 
   # Redis（对话历史持久化）

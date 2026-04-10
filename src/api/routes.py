@@ -20,6 +20,7 @@ from src.api.models import (
 from src.rag.chain import rag_query
 from src.agent.diagnostic_agent import create_diagnostic_agent
 from src.utils.session_store import create_session_store
+from src.llm.client import extract_text
 
 router = APIRouter()
 
@@ -101,12 +102,7 @@ async def diagnose(req: DiagnoseRequest):
                     "result": msg.content[:300],
                 })
 
-        final_content = messages[-1].content
-        if isinstance(final_content, list):
-            final_content = "".join(
-                block["text"] for block in final_content
-                if isinstance(block, dict) and block.get("type") == "text"
-            )
+        final_content = extract_text(messages[-1].content)
 
         return DiagnoseResponse(
             result=final_content,
@@ -137,12 +133,7 @@ async def diagnose_stream(req: DiagnoseRequest):
                                 for tc in msg.tool_calls:
                                     yield f"data: {json.dumps({'type': 'tool_call', 'tool': tc['name'], 'args': tc['args']}, ensure_ascii=False)}\n\n"
                             elif msg.content:
-                                content = msg.content
-                                if isinstance(content, list):
-                                    content = "".join(
-                                        block["text"] for block in content
-                                        if isinstance(block, dict) and block.get("type") == "text"
-                                    )
+                                content = extract_text(msg.content)
                                 yield f"data: {json.dumps({'type': 'answer', 'content': content}, ensure_ascii=False)}\n\n"
                         elif msg_type == "ToolMessage":
                             yield f"data: {json.dumps({'type': 'tool_result', 'tool': msg.name, 'result': msg.content[:300]}, ensure_ascii=False)}\n\n"

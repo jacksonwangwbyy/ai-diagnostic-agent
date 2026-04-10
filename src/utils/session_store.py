@@ -11,7 +11,7 @@ import json
 import logging
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from src.config.settings import settings
-from src.llm.client import DiagnosticChat, DIAGNOSTIC_SYSTEM_PROMPT
+from src.llm.client import DiagnosticChat
 
 logger = logging.getLogger(__name__)
 
@@ -23,24 +23,41 @@ MSG_TYPE_MAP = {
 }
 
 
-def _serialize_messages(messages: list) -> str:
-    """将消息列表序列化为 JSON 字符串"""
-    data = []
-    for msg in messages:
+def _serialize_session(chat: DiagnosticChat) -> str:
+    """将会话序列化为 JSON（包含 provider + 消息历史）"""
+    data = {
+        "provider": chat.provider_name,
+        "messages": [],
+    }
+    for msg in chat.history:
         msg_type = type(msg).__name__.lower().replace("message", "")
-        data.append({"type": msg_type, "content": msg.content})
+        data["messages"].append({"type": msg_type, "content": msg.content})
     return json.dumps(data, ensure_ascii=False)
 
 
-def _deserialize_messages(raw: str) -> list:
-    """从 JSON 字符串反序列化为消息列表"""
+def _deserialize_session(raw: str, fallback_provider: str) -> DiagnosticChat:
+    """从 JSON 反序列化为 DiagnosticChat（恢复 provider + 消息历史）"""
     data = json.loads(raw)
-    messages = []
-    for item in data:
-        cls = MSG_TYPE_MAP.get(item["type"])
-        if cls:
-            messages.append(cls(content=item["content"]))
-    return messages
+    provider = data.get("provider", fallback_provider)
+    messages_data = data.get("messages", data if isinstance(data, list) else [])
+
+    # 兼容旧格式（纯消息列表）
+    if isinstance(messages_data, list) and messages_data and "type" in messages_data[0]:
+        pass
+    else:
+        messages_data = []
+
+    chat = DiagnosticChat(provider)
+    if messages_data:
+        messages = []
+        for item in messages_data:
+            cls = MSG_TYPE_MAP.get(item["type"])
+            if cls:
+                messages.append(cls(content=item["content"]))
+        if messages:
+            chat.history = messages
+
+    return chat
 
 
 class MemorySessionStore:
@@ -91,8 +108,7 @@ class RedisSessionStore:
         raw = self._redis.get(key)
 
         if raw:
-            chat = DiagnosticChat(provider)
-            chat.history = _deserialize_messages(raw)
+            chat = _deserialize_session(raw, provider)
             self._cache[session_id] = chat
             return chat
 
@@ -103,9 +119,9 @@ class RedisSessionStore:
         return chat
 
     def _save(self, session_id: str, chat: DiagnosticChat):
-        """保存会话到 Redis"""
+        """保存会话到 Redis（含 provider）"""
         key = self._key(session_id)
-        raw = _serialize_messages(chat.history)
+        raw = _serialize_session(chat)
         self._redis.setex(key, self._ttl, raw)
 
     def save(self, session_id: str):
@@ -123,8 +139,11 @@ class RedisSessionStore:
         for key in keys:
             sid = key.replace(self._prefix, "")
             raw = self._redis.get(key)
-            count = len(json.loads(raw)) if raw else 0
-            sessions.append({"id": sid, "history_count": count})
+            if raw:
+                data = json.loads(raw)
+                provider = data.get("provider", "unknown")
+                count = len(data.get("messages", []))
+                sessions.append({"id": sid, "provider": provider, "history_count": count})
         return sessions
 
 

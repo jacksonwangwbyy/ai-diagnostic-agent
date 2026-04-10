@@ -13,6 +13,9 @@ from src.config.settings import settings
 
 COLLECTION_NAME = "device_knowledge_base"
 
+# 模块级缓存，避免每次检索都重新初始化 embedding 模型和 vectorstore
+_cached_vectorstore: Chroma | None = None
+
 
 def create_embedding(use_local: bool = True):
     """
@@ -76,11 +79,15 @@ def create_vector_store(
 
 def search(query: str, k: int = 5) -> list[Document]:
     """相似度检索"""
-    vectorstore = create_vector_store()
-    return vectorstore.similarity_search(query, k=k)
+    global _cached_vectorstore
+    if _cached_vectorstore is None:
+        _cached_vectorstore = create_vector_store()
+    return _cached_vectorstore.similarity_search(query, k=k)
 
 
 def search_with_scores(query: str, k: int = 5) -> list[tuple[Document, float]]:
     """带分数的检索（分数越小越相似）"""
-    vectorstore = create_vector_store()
-    return vectorstore.similarity_search_with_score(query, k=k)
+    global _cached_vectorstore
+    if _cached_vectorstore is None:
+        _cached_vectorstore = create_vector_store()
+    return _cached_vectorstore.similarity_search_with_score(query, k=k)

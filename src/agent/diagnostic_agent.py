@@ -16,7 +16,7 @@
 4. 工具注册：Agent 通过工具的 name 和 description 来决定何时调用哪个工具
    所以工具的 description 写得好不好，直接影响 Agent 的智能程度
 """
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
 from src.llm.client import create_llm
