@@ -137,7 +137,8 @@ ai-diagnostic-agent/
 - [x] Milvus 集成（docker-compose 中配置）
 - [ ] ChromaDB → Milvus 迁移（向量存储切换）
 - [ ] 多模型降级策略（provider A 失败自动切 B）
-- [ ] 对话历史持久化（当前内存存储，可切 Redis）
+- [x] 对话历史持久化（Redis，自动降级到内存）
+- [x] React 前端（Vite + TypeScript + SSE 流式 UI）
 
 **交付**：`uvicorn src.api.app:app` 或 `docker compose up`
 
@@ -172,7 +173,11 @@ python -m src.main
 uvicorn src.api.app:app --reload --port 8000
 # 访问 http://localhost:8000/docs 查看 Swagger 文档
 
-# 6c. Docker 部署（含 Milvus）
+# 6c. 前端开发模式
+cd frontend && npm install && npm run dev
+# 访问 http://localhost:3000（自动代理到后端 8000）
+
+# 6d. Docker 部署（含 Milvus + Redis）
 docker compose up -d
 ```
 
