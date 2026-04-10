@@ -552,8 +552,8 @@ FastAPI 接收请求 (routes.py)
 Agent 开始推理循环:
   │
   ├── Thought: 先查设备状态
-  │   └── Action: query_device_status("BAR-001")
-  │       └── 返回: 制冰机 error, E03
+  │   └── Action: query_device_status("制冰机")
+  │       └── HTTP → bar_middleware:8003 → 返回真实状态
   │
   ├── Thought: 查日志看详情
   │   └── Action: fetch_device_logs("middleware", keyword="E03")
@@ -572,6 +572,96 @@ Agent 开始推理循环:
       ▼
   FastAPI 返回 JSON 响应
 ```
+
+---
+
+## 真实 API 接入：从模拟数据到生产环境
+
+### 为什么要接真实 API
+
+Phase 3 开发阶段用的是模拟数据（hardcode 在代码里的 MOCK_DEVICES），面试官一追问就露馅了。接入真实 API 后：
+
+- Agent 拿到的是设备的真实运行状态，诊断结果有实际意义
+- 简历上可以写"对接真实 IoT 设备 API"
+- 展示了从原型到落地的工程化能力
+
+### bar_middleware 接口体系
+
+bar_middleware 是公司现有的设备中间件（Python + FastAPI），运行在同一台主机的 8003 端口。它对每个硬件模块都提供了统一的 `/machine/status` 接口：
+
+```
+GET /ice/machine/status        → 制冰机状态（错误码、冰量、满载等）
+GET /coffee/machine/status     → 咖啡机状态（错误码、运行中/空闲等）
+GET /cup/machine/status        → 杯子机状态
+GET /lid/machine/status        → 扣盖机状态
+GET /power/machine/status      → 电源状态（各路开关）
+GET /RobotArm/Dev/status       → 机械臂状态
+GET /agent/material/all        → 所有物料数据
+GET /mid/version               → 中间件版本
+```
+
+所有接口返回统一格式：
+
+```json
+{
+    "success": true,
+    "msg": "",
+    "data": {
+        "status_list": [
+            {"code": 0, "name": "制冰机", "status": "normal", "error_code": "", "full": 1, "inventory": 5000}
+        ]
+    }
+}
+```
+
+### 改造 device_status.py
+
+核心变化：把 MOCK_DEVICES 字典换成真实的 HTTP 调用。
+
+```python
+import httpx
+from src.config.settings import settings
+
+# 各模块的状态接口映射
+MODULE_STATUS_ENDPOINTS = {
+    "制冰机": "/ice/machine/status",
+    "咖啡机": "/coffee/machine/status",
+    "杯子机": "/cup/machine/status",
+    # ... 10+ 个模块
+}
+
+def _fetch(path: str) -> dict | None:
+    """请求 bar_middleware 接口"""
+    url = f"{settings.MIDDLEWARE_BASE_URL}{path}"
+    try:
+        resp = httpx.get(url, timeout=5.0)
+        return resp.json()
+    except Exception:
+        return None
+
+@tool
+def query_device_status(module: str = "all") -> str:
+    """查询饮吧设备各硬件模块的实时运行状态..."""
+
+    # 先检查中间件是否在线
+    version_data = _fetch("/mid/version")
+    if version_data is None:
+        return "无法连接到 bar_middleware，中间件可能未启动。"
+
+    # 逐个查询各模块
+    for name, path in MODULE_STATUS_ENDPOINTS.items():
+        data = _fetch(path)
+        # 格式化输出...
+```
+
+### 配置
+
+```bash
+# .env
+MIDDLEWARE_BASE_URL=http://localhost:8003  # 同机部署
+```
+
+因为诊断 Agent 和 bar_middleware 部署在同一台机器上，直接 `localhost` 调用，不需要走网络。
 
 ---
 

@@ -37,6 +37,12 @@ class Settings:
     VECTOR_DB_TYPE: str = os.getenv("VECTOR_DB_TYPE", "chromadb")
     CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
 
+    # Bar Middleware（同机部署，直接 localhost）
+    MIDDLEWARE_BASE_URL: str = os.getenv("MIDDLEWARE_BASE_URL", "http://localhost:8003")
+
+    # Bar Middleware（同机部署，默认 localhost:8003）
+    MIDDLEWARE_BASE_URL: str = os.getenv("MIDDLEWARE_BASE_URL", "http://localhost:8003")
+
     # Bar Deploy Server
     BAR_DEPLOY_SERVER_URL: str = os.getenv("BAR_DEPLOY_SERVER_URL", "http://localhost:8080")
 
