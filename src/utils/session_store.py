@@ -38,24 +38,23 @@ def _serialize_session(chat: DiagnosticChat) -> str:
 def _deserialize_session(raw: str, fallback_provider: str) -> DiagnosticChat:
     """从 JSON 反序列化为 DiagnosticChat（恢复 provider + 消息历史）"""
     data = json.loads(raw)
-    provider = data.get("provider", fallback_provider)
-    messages_data = data.get("messages", data if isinstance(data, list) else [])
 
-    # 兼容旧格式（纯消息列表）
-    if isinstance(messages_data, list) and messages_data and "type" in messages_data[0]:
-        pass
+    # 兼容旧格式（纯消息列表）和新格式（含 provider 的 dict）
+    if isinstance(data, list):
+        provider = fallback_provider
+        messages_data = data
     else:
-        messages_data = []
+        provider = data.get("provider", fallback_provider)
+        messages_data = data.get("messages", [])
 
     chat = DiagnosticChat(provider)
-    if messages_data:
-        messages = []
-        for item in messages_data:
-            cls = MSG_TYPE_MAP.get(item["type"])
-            if cls:
-                messages.append(cls(content=item["content"]))
-        if messages:
-            chat.history = messages
+    messages = []
+    for item in messages_data:
+        cls = MSG_TYPE_MAP.get(item.get("type"))
+        if cls:
+            messages.append(cls(content=item["content"]))
+    if messages:
+        chat.history = messages
 
     return chat
 
@@ -101,6 +100,8 @@ class RedisSessionStore:
     def get(self, session_id: str, provider: str) -> DiagnosticChat:
         # 先查内存缓存
         if session_id in self._cache:
+            # 刷新 Redis TTL，防止活跃会话过期
+            self._redis.expire(self._key(session_id), self._ttl)
             return self._cache[session_id]
 
         # 再查 Redis

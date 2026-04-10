@@ -166,12 +166,10 @@ class DiagnosticChat:
                             yield block["text"]
         except Exception:
             # 流式失败，降级为非流式
-            if not full_response:
-                # 移除已添加的 HumanMessage，用 chat 方法重试
-                self.history.pop()
-                result = self.chat(user_input)
-                yield result
-                used_fallback = True
+            self.history.pop()  # 移除已添加的 HumanMessage
+            result = self.chat(user_input)
+            yield result
+            used_fallback = True
 
         if not used_fallback:
             text = full_response.strip()

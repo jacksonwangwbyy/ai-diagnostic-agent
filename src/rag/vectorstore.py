@@ -9,6 +9,7 @@
 5. 通过 VECTOR_DB_TYPE 配置切换：chromadb / milvus
 """
 import logging
+import threading
 from langchain_core.documents import Document
 from src.config.settings import settings
 
@@ -16,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "device_knowledge_base"
 
-# 模块级缓存，避免每次检索都重新初始化 embedding 模型和 vectorstore
 _cached_vectorstore = None
+_cache_lock = threading.Lock()
 
 
 def create_embedding(use_local: bool = True):
@@ -125,7 +126,9 @@ def search(query: str, k: int = 5) -> list[Document]:
     """相似度检索"""
     global _cached_vectorstore
     if _cached_vectorstore is None:
-        _cached_vectorstore = create_vector_store()
+        with _cache_lock:
+            if _cached_vectorstore is None:
+                _cached_vectorstore = create_vector_store()
     return _cached_vectorstore.similarity_search(query, k=k)
 
 
@@ -133,5 +136,7 @@ def search_with_scores(query: str, k: int = 5) -> list[tuple[Document, float]]:
     """带分数的检索（分数越小越相似）"""
     global _cached_vectorstore
     if _cached_vectorstore is None:
-        _cached_vectorstore = create_vector_store()
+        with _cache_lock:
+            if _cached_vectorstore is None:
+                _cached_vectorstore = create_vector_store()
     return _cached_vectorstore.similarity_search_with_score(query, k=k)

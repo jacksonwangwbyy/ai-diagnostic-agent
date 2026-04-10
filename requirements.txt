@@ -1,33 +1,33 @@
 # === LLM Frameworks ===
-langchain>=0.3
-langchain-anthropic>=0.3
-langchain-openai>=0.3
-langchain-community>=0.3
-langchain-text-splitters>=0.3
-langgraph>=0.3
+langchain>=0.3,<0.4
+langchain-anthropic>=0.3,<0.4
+langchain-openai>=0.3,<0.4
+langchain-community>=0.3,<0.4
+langchain-text-splitters>=0.3,<0.4
+langgraph>=0.3,<0.4
 
 # === Web Framework ===
-fastapi>=0.115
-uvicorn>=0.34
+fastapi>=0.115,<0.116
+uvicorn>=0.34,<0.35
 
 # === Vector Database ===
-langchain-chroma>=0.2
-chromadb>=0.5
-langchain-milvus>=0.2
-pymilvus>=2.4
+langchain-chroma>=0.2,<0.3
+chromadb>=0.5,<0.6
+langchain-milvus>=0.2,<0.3
+pymilvus>=2.4,<2.5
 
 # === Embedding (Local) ===
-sentence-transformers>=4.0
+sentence-transformers>=4.0,<5.0
 
 # === Document Processing ===
-pypdf>=5.0
+pypdf>=5.0,<6.0
 
 # === Utils ===
-python-dotenv>=1.0
-pydantic>=2.0
-httpx>=0.28
-redis>=5.0
+python-dotenv>=1.0,<2.0
+pydantic>=2.0,<3.0
+httpx>=0.28,<0.29
+redis>=5.0,<6.0
 
 # === Testing ===
-pytest>=8.0
-pytest-asyncio>=0.24
+pytest>=8.0,<9.0
+pytest-asyncio>=0.24,<0.25

@@ -10,7 +10,7 @@ API 路由
 import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
 from src.api.models import (
     ChatRequest, ChatResponse,
@@ -102,7 +102,8 @@ async def diagnose(req: DiagnoseRequest):
                     "result": msg.content[:300],
                 })
 
-        final_content = extract_text(messages[-1].content)
+        ai_messages = [m for m in messages if isinstance(m, AIMessage) and m.content]
+        final_content = extract_text(ai_messages[-1].content) if ai_messages else "Agent 未能生成诊断结论"
 
         return DiagnoseResponse(
             result=final_content,
