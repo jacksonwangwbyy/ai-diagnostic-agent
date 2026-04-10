@@ -1,20 +1,23 @@
 """
-向量存储 - 将文档块 Embedding 后存入 ChromaDB
+向量存储 - 支持 ChromaDB（开发）和 Milvus（生产）
 
 学习要点：
 1. Embedding - 把文本转成高维向量，语义相似的文本向量距离近
 2. 向量数据库 - 专门存储和检索向量的数据库，支持相似度搜索
 3. ChromaDB - 轻量级向量数据库，本地运行，适合开发阶段
-4. Embedding 选型 - OpenAI API（效果好，要钱）vs 本地模型（免费离线）
+4. Milvus - 生产级向量数据库，支持分布式部署，适合生产环境
+5. 通过 VECTOR_DB_TYPE 配置切换：chromadb / milvus
 """
+import logging
 from langchain_core.documents import Document
-from langchain_chroma import Chroma
 from src.config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "device_knowledge_base"
 
 # 模块级缓存，避免每次检索都重新初始化 embedding 模型和 vectorstore
-_cached_vectorstore: Chroma | None = None
+_cached_vectorstore = None
 
 
 def create_embedding(use_local: bool = True):
@@ -43,38 +46,79 @@ def create_embedding(use_local: bool = True):
     return OpenAIEmbeddings(**kwargs)
 
 
-def create_vector_store(
-    documents: list[Document] = None,
-    use_local_embedding: bool = True,
-) -> Chroma:
-    """
-    创建或加载 ChromaDB 向量存储
+def _create_chroma_store(embedding, documents: list[Document] = None):
+    """创建或加载 ChromaDB 向量存储"""
+    from langchain_chroma import Chroma
 
-    Args:
-        documents: 文档块列表（None=加载已有数据）
-        use_local_embedding: 是否用本地 Embedding
-    """
-    embedding = create_embedding(use_local=use_local_embedding)
     persist_dir = settings.CHROMA_PERSIST_DIR
 
     if documents:
-        print(f"正在 Embedding {len(documents)} 个文档块...")
-        embed_name = "本地 HuggingFace" if use_local_embedding else "OpenAI API"
-        print(f"  Embedding 模型: {embed_name}")
         vectorstore = Chroma.from_documents(
             documents=documents,
             embedding=embedding,
             collection_name=COLLECTION_NAME,
             persist_directory=persist_dir,
         )
-        print(f"✓ 已存入 ChromaDB ({persist_dir})")
+        logger.info(f"已存入 ChromaDB ({persist_dir})，共 {len(documents)} 个文档块")
         return vectorstore
-    else:
-        return Chroma(
+
+    return Chroma(
+        collection_name=COLLECTION_NAME,
+        embedding_function=embedding,
+        persist_directory=persist_dir,
+    )
+
+
+def _create_milvus_store(embedding, documents: list[Document] = None):
+    """创建或加载 Milvus 向量存储"""
+    from langchain_milvus import Milvus
+
+    connection_args = {
+        "host": settings.MILVUS_HOST,
+        "port": settings.MILVUS_PORT,
+    }
+
+    if documents:
+        vectorstore = Milvus.from_documents(
+            documents=documents,
+            embedding=embedding,
             collection_name=COLLECTION_NAME,
-            embedding_function=embedding,
-            persist_directory=persist_dir,
+            connection_args=connection_args,
         )
+        logger.info(f"已存入 Milvus ({settings.MILVUS_HOST}:{settings.MILVUS_PORT})，共 {len(documents)} 个文档块")
+        return vectorstore
+
+    return Milvus(
+        embedding_function=embedding,
+        collection_name=COLLECTION_NAME,
+        connection_args=connection_args,
+    )
+
+
+def create_vector_store(
+    documents: list[Document] = None,
+    use_local_embedding: bool = True,
+):
+    """
+    创建或加载向量存储（根据 VECTOR_DB_TYPE 自动选择后端）
+
+    Args:
+        documents: 文档块列表（None=加载已有数据）
+        use_local_embedding: 是否用本地 Embedding
+    """
+    embedding = create_embedding(use_local=use_local_embedding)
+    db_type = settings.VECTOR_DB_TYPE
+
+    if documents:
+        embed_name = "本地 HuggingFace" if use_local_embedding else "OpenAI API"
+        print(f"正在 Embedding {len(documents)} 个文档块...")
+        print(f"  Embedding 模型: {embed_name}")
+        print(f"  向量数据库: {db_type}")
+
+    if db_type == "milvus":
+        return _create_milvus_store(embedding, documents)
+    else:
+        return _create_chroma_store(embedding, documents)
 
 
 def search(query: str, k: int = 5) -> list[Document]:

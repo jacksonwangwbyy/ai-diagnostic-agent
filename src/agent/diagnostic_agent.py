@@ -19,7 +19,7 @@
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
-from src.llm.client import create_llm
+from src.llm.client import create_llm, extract_text
 from src.tools.knowledge_search import search_knowledge_base
 from src.tools.log_reader import fetch_device_logs
 from src.tools.device_status import query_device_status
@@ -117,23 +117,10 @@ def run_diagnosis(question: str, provider: str = None, verbose: bool = True) -> 
                     for tc in msg.tool_calls:
                         print(f"🤖 调用工具: {tc['name']}({tc['args']})")
                 elif msg.content:
-                    content = msg.content
-                    if isinstance(content, list):
-                        content = "".join(
-                            block["text"] for block in content
-                            if isinstance(block, dict) and block.get("type") == "text"
-                        )
-                    print(f"🤖 回复: {content[:200]}...")
+                    print(f"🤖 回复: {extract_text(msg.content)[:200]}...")
             elif msg_type == "ToolMessage":
                 print(f"🔧 工具结果: [{msg.name}] {msg.content[:150]}...")
             print()
 
     # 返回最后一条 AI 消息
-    final_msg = messages[-1]
-    content = final_msg.content
-    if isinstance(content, list):
-        content = "".join(
-            block["text"] for block in content
-            if isinstance(block, dict) and block.get("type") == "text"
-        )
-    return content
+    return extract_text(messages[-1].content)

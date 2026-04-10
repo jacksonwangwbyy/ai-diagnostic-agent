@@ -1,5 +1,5 @@
 """
-LLM 客户端 - 支持 Claude / OpenAI 多模型切换
+LLM 客户端 - 支持 Claude / OpenAI 多模型切换 + 自动降级
 
 学习要点：
 1. LangChain 的 ChatModel 抽象 - 统一接口，不同实现
@@ -7,25 +7,22 @@ LLM 客户端 - 支持 Claude / OpenAI 多模型切换
 3. base_url 配置 - 支持中转站/代理
 4. 流式输出 - stream() 方法
 5. 多轮对话 - 消息历史管理
+6. with_fallbacks() - 主模型失败时自动切换到备用模型
 """
+import logging
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from src.config.settings import settings
 
+logger = logging.getLogger(__name__)
 
-def create_llm(provider: str = None):
-    """
-    创建 LLM 实例
+# provider 名称 → 构造函数映射
+PROVIDERS = {"claude", "openai"}
 
-    Args:
-        provider: "claude" 或 "openai"，默认读取配置
 
-    Returns:
-        ChatModel 实例
-    """
-    provider = provider or settings.DEFAULT_LLM_PROVIDER
-
+def _create_single_llm(provider: str):
+    """创建单个 provider 的 LLM 实例（内部使用）"""
     if provider == "claude":
         kwargs = {
             "model": settings.CLAUDE_MODEL,
@@ -47,6 +44,46 @@ def create_llm(provider: str = None):
 
     else:
         raise ValueError(f"不支持的 provider: {provider}，请使用 'claude' 或 'openai'")
+
+
+def _get_fallback_provider(provider: str) -> str | None:
+    """获取备用 provider（claude ↔ openai）"""
+    fallback_map = {"claude": "openai", "openai": "claude"}
+    fallback = fallback_map.get(provider)
+    # 检查备用 provider 是否配置了 API key
+    if fallback == "claude" and not settings.ANTHROPIC_API_KEY:
+        return None
+    if fallback == "openai" and not settings.OPENAI_API_KEY:
+        return None
+    return fallback
+
+
+def create_llm(provider: str = None):
+    """
+    创建 LLM 实例（支持自动降级）
+
+    当 LLM_FALLBACK_ENABLED=true 且备用 provider 有 API key 时，
+    主 provider 调用失败会自动切换到备用 provider。
+
+    Args:
+        provider: "claude" 或 "openai"，默认读取配置
+
+    Returns:
+        ChatModel 实例（可能带 fallback 包装）
+    """
+    provider = provider or settings.DEFAULT_LLM_PROVIDER
+    primary = _create_single_llm(provider)
+
+    if not settings.LLM_FALLBACK_ENABLED:
+        return primary
+
+    fallback_provider = _get_fallback_provider(provider)
+    if not fallback_provider:
+        return primary
+
+    fallback = _create_single_llm(fallback_provider)
+    logger.info(f"LLM 降级链: {provider} → {fallback_provider}")
+    return primary.with_fallbacks([fallback])
 
 
 def extract_text(content) -> str:

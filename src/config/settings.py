@@ -36,12 +36,17 @@ class Settings:
     # Vector DB
     VECTOR_DB_TYPE: str = os.getenv("VECTOR_DB_TYPE", "chromadb")
     CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
+    MILVUS_HOST: str = os.getenv("MILVUS_HOST", "localhost")
+    MILVUS_PORT: int = int(os.getenv("MILVUS_PORT", "19530"))
 
     # Bar Middleware（同机部署，默认 localhost:8003）
     MIDDLEWARE_BASE_URL: str = os.getenv("MIDDLEWARE_BASE_URL", "http://localhost:8003")
 
     # Bar Deploy Server
     BAR_DEPLOY_SERVER_URL: str = os.getenv("BAR_DEPLOY_SERVER_URL", "http://localhost:8080")
+
+    # 多模型降级：主 provider 失败时自动切换到备用 provider
+    LLM_FALLBACK_ENABLED: bool = os.getenv("LLM_FALLBACK_ENABLED", "true").lower() == "true"
 
     # Redis（对话历史持久化）
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
