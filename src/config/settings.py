@@ -10,12 +10,6 @@ for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
     os.environ.pop(key, None)
 os.environ["NO_PROXY"] = "*"
 
-# 统一清除系统代理，避免 Clash 等代理与中转站 SSL 冲突
-# 只在这里做一次，其他模块不再重复
-for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
-    os.environ.pop(key, None)
-os.environ["NO_PROXY"] = "*"
-
 
 class Settings:
     # LLM API Keys
