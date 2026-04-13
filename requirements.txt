@@ -25,6 +25,9 @@ pypdf>=5.0,<6.0
 # === RAG Optimization ===
 rank-bm25>=0.2,<0.3
 
+# === Security ===
+slowapi>=0.1,<0.2
+
 # === Utils ===
 python-dotenv>=1.0,<2.0
 pydantic>=2.0,<3.0

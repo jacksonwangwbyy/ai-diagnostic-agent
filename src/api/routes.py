@@ -10,9 +10,10 @@ API 路由
 import json
 import asyncio
 from functools import partial
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage, AIMessage
+from src.api.limiter import limiter
 
 from src.api.models import (
     ChatRequest, ChatResponse,
@@ -34,7 +35,8 @@ _store = create_session_store()
 # ==================== 普通对话 ====================
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+@limiter.limit("30/minute")
+async def chat(request: Request, req: ChatRequest):
     """普通对话（非流式）"""
     try:
         session = _store.get(req.session_id, req.provider)
@@ -52,7 +54,8 @@ async def chat(req: ChatRequest):
 
 
 @router.post("/chat/stream")
-async def chat_stream(req: ChatRequest):
+@limiter.limit("30/minute")
+async def chat_stream(request: Request, req: ChatRequest):
     """普通对话（SSE 流式输出）"""
     session = _store.get(req.session_id, req.provider)
 
@@ -76,7 +79,8 @@ async def chat_stream(req: ChatRequest):
 # ==================== Agent 诊断 ====================
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
-async def diagnose(req: DiagnoseRequest):
+@limiter.limit("10/minute")
+async def diagnose(request: Request, req: DiagnoseRequest):
     """Agent 诊断（工具调用 + 多步推理）"""
     try:
         # 多 Agent 协作模式
@@ -131,7 +135,8 @@ async def diagnose(req: DiagnoseRequest):
 
 
 @router.post("/diagnose/stream")
-async def diagnose_stream(req: DiagnoseRequest):
+@limiter.limit("10/minute")
+async def diagnose_stream(request: Request, req: DiagnoseRequest):
     """Agent 诊断（SSE 流式）"""
     agent = create_diagnostic_agent(req.provider)
 
@@ -168,7 +173,8 @@ async def diagnose_stream(req: DiagnoseRequest):
 # ==================== RAG 检索 ====================
 
 @router.post("/rag/query", response_model=RAGQueryResponse)
-async def rag_search(req: RAGQueryRequest):
+@limiter.limit("20/minute")
+async def rag_search(request: Request, req: RAGQueryRequest):
     """RAG 知识库检索问答"""
     try:
         result = rag_query(req.query, k=req.top_k)

@@ -10,6 +10,9 @@ FastAPI 服务入口
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from src.api.limiter import limiter
 from src.api.routes import router
 
 app = FastAPI(
@@ -17,6 +20,9 @@ app = FastAPI(
     description="基于 LangChain + RAG 的智能设备故障诊断服务",
     version="1.0.0",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS 跨域（允许前端调用）
 # 生产环境通过 CORS_ORIGINS 环境变量配置允许的来源，多个用逗号分隔
