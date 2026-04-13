@@ -603,6 +603,9 @@ def check_network_status(target: str = "baidu.com") -> str:
 | `firmware_check.py` | Agent 工具：版本检查 | `check_firmware_version(component)` |
 | `reranker.py` | CrossEncoder 重排序 | `rerank(query, docs, top_k)` |
 | `hybrid_search.py` | 混合检索入口 | `enhanced_search(query, k)` / `BM25Index` / `rrf_fuse()` |
+| `repair_agent.py` | 维修建议 Agent | `create_repair_agent()` |
+| `monitor_agent.py` | 设备监控 Agent | `create_monitor_agent()` |
+| `supervisor.py` | 多 Agent 编排 | `run_multi_agent(question)` |
 | `diagnostic_agent.py` | Agent 编排核心 | `create_diagnostic_agent()` / `run_diagnosis()` |
 | `app.py` | FastAPI 入口 | `app` |
 | `models.py` | 请求/响应模型 | `ChatRequest` / `DiagnoseResponse` / `RAGQueryResponse` |
@@ -612,6 +615,49 @@ def check_network_status(target: str = "baidu.com") -> str:
 | `build_knowledge_base.py` | 知识库构建 | `python scripts/build_knowledge_base.py --local` |
 | `App.tsx` | React 前端 | SSE 流式解析 + 消息渲染 |
 | `run_eval.py` | RAG 评估脚本 | `python evaluation/run_eval.py` |
+
+---
+
+## 第七部分：多 Agent 协作系统
+
+### 7.1 架构
+
+```
+用户请求 → Supervisor（意图识别 + 路由）
+                ↓
+    ┌───────────┼───────────┐
+    ↓           ↓           ↓
+ 诊断 Agent  维修 Agent  监控 Agent
+ (6个工具)   (知识库+报告) (状态+日志+版本)
+```
+
+### 7.2 路由策略
+
+| 关键词 | 路由 |
+|--------|------|
+| 故障/报错/不工作 | diagnose（诊断 Agent） |
+| 维修/怎么修/备件 | repair（维修 Agent） |
+| 状态/健康/检查 | monitor（监控 Agent） |
+| 故障 + 维修 | diagnose+repair（链式） |
+
+### 7.3 使用方式
+
+**API 调用（多 Agent 模式）：**
+```bash
+curl -X POST http://localhost:8000/api/diagnose \
+  -H "Content-Type: application/json" \
+  -d '{"question": "制冰机故障了，怎么修", "use_multi_agent": true}'
+```
+
+**Python 直接调用：**
+```python
+from src.agent.supervisor import run_multi_agent
+
+result = run_multi_agent("检查所有设备状态")
+print(result["route"])        # "monitor"
+print(result["agents_used"])  # ["monitor"]
+print(result["result"])       # 设备健康状态汇总
+```
 
 ---
 

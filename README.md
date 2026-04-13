@@ -31,7 +31,10 @@ ai-diagnostic-agent/
 │   │   ├── hybrid_search.py       # BM25 混合检索 + RRF 融合
 │   │   └── chain.py               # RAG 检索链（混合检索+生成+引用）
 │   ├── agent/                     # Agent 模块
-│   │   └── diagnostic_agent.py    # ReAct Agent（工具编排+多步推理）
+│   │   ├── diagnostic_agent.py    # ReAct 诊断 Agent（6 工具）
+│   │   ├── repair_agent.py        # 维修建议 Agent
+│   │   ├── monitor_agent.py       # 设备监控 Agent
+│   │   └── supervisor.py          # Supervisor 多 Agent 编排引擎
 │   ├── tools/                     # 工具实现
 │   │   ├── knowledge_search.py    # 知识库检索工具（混合检索+重排序）
 │   │   ├── log_reader.py          # 设备日志读取工具（local/ssh 双模式）
@@ -50,7 +53,7 @@ ai-diagnostic-agent/
 │   └── fault-cases/               # 历史故障案例
 ├── scripts/
 │   └── build_knowledge_base.py    # 一键构建知识库脚本
-├── tests/                         # 测试（114 用例）
+├── tests/                         # 测试（133 用例）
 ├── evaluation/                    # RAG 评估框架
 │   ├── eval_dataset.json          # 20 组 Q&A 评估数据集
 │   ├── run_eval.py                # 自动评估脚本
@@ -130,6 +133,7 @@ ai-diagnostic-agent/
 - [x] Agent 执行过程可视化（CLI verbose 模式）
 - [x] 设备服务重启工具（SSH 命令白名单）
 - [x] 固件版本检查工具（API 查询）
+- [x] 多 Agent 协作系统（Supervisor + 诊断/维修/监控 Agent）
 
 **交付**：`python -m src.main` Agent 模式，支持 `/agent` 和 `/chat` 切换
 
