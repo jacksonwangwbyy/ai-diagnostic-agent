@@ -7,7 +7,7 @@
 3. description 要写清楚"什么时候该用这个工具"，这直接影响 Agent 的决策
 """
 from langchain_core.tools import tool
-from src.rag.vectorstore import search_with_scores
+from src.rag.hybrid_search import enhanced_search
 
 
 @tool
@@ -19,7 +19,7 @@ def search_knowledge_base(query: str) -> str:
     Args:
         query: 搜索关键词，例如"制冰机故障"、"日志错误码"、"机械臂接口"
     """
-    results = search_with_scores(query, k=5)
+    results = enhanced_search(query, k=5)
 
     if not results:
         return "知识库中没有找到相关文档。"

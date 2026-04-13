@@ -9,6 +9,7 @@ RAG 检索链 - 将向量检索与 LLM 生成串联起来
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.rag.vectorstore import search_with_scores
+from src.rag.hybrid_search import enhanced_search
 from src.llm.client import create_llm, extract_text
 
 
@@ -71,8 +72,8 @@ def rag_query(question: str, provider: str = None, k: int = 5) -> dict:
             "context_count": 检索到的文档数量,
         }
     """
-    # Step 1: 检索相关文档
-    results = search_with_scores(question, k=k)
+    # Step 1: 检索相关文档（混合检索 + 重排序）
+    results = enhanced_search(question, k=k)
 
     if not results:
         return {
@@ -115,8 +116,8 @@ def rag_stream(question: str, provider: str = None, k: int = 5):
 
     最后 yield 一个 dict 包含元信息（sources 等）
     """
-    # Step 1: 检索
-    results = search_with_scores(question, k=k)
+    # Step 1: 检索（混合检索 + 重排序）
+    results = enhanced_search(question, k=k)
 
     if not results:
         yield "知识库中没有找到相关文档。"
