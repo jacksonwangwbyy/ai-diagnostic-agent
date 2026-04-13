@@ -1,0 +1,22 @@
+[
+  {"question": "中间件启动不了怎么办？", "expected_answer_keywords": ["端口", "8003", "占用", "systemctl", "restart"], "expected_sources": ["middleware-faults.md", "bar_middleware_README.md"]},
+  {"question": "制冰机不出冰是什么原因？", "expected_answer_keywords": ["压缩机", "温度", "过热", "保护"], "expected_sources": ["hardware-module-faults.md"]},
+  {"question": "机械臂归零失败", "expected_answer_keywords": ["限位", "开关", "归零", "校准"], "expected_sources": ["robot-arm-faults.md"]},
+  {"question": "OTA升级失败了", "expected_answer_keywords": ["下载", "网络", "重试", "版本"], "expected_sources": ["network-deploy-faults.md"]},
+  {"question": "物料余量显示不对", "expected_answer_keywords": ["传感器", "漂移", "校准", "通道"], "expected_sources": ["material-monitor-faults.md"]},
+  {"question": "Docker容器一直重启", "expected_answer_keywords": ["CrashLoop", "日志", "docker", "logs"], "expected_sources": ["network-deploy-faults.md"]},
+  {"question": "咖啡机水温不够热", "expected_answer_keywords": ["加热", "元件", "温度", "传感器"], "expected_sources": ["hardware-module-faults.md"]},
+  {"question": "设备日志规范是什么？", "expected_answer_keywords": ["日志", "格式", "级别"], "expected_sources": ["设备端日志统一规范 v1.md"]},
+  {"question": "杯子机卡杯了怎么处理？", "expected_answer_keywords": ["卡杯", "传感器", "清除"], "expected_sources": ["hardware-module-faults.md"]},
+  {"question": "中间件内存泄漏", "expected_answer_keywords": ["内存", "OOM", "重启", "监控"], "expected_sources": ["middleware-faults.md"]},
+  {"question": "手爪抓取物体掉了", "expected_answer_keywords": ["手爪", "检测", "抓取", "传感器"], "expected_sources": ["robot-arm-faults.md", "机械臂手爪物体检测接口总结.md"]},
+  {"question": "版本同步不一致怎么办？", "expected_answer_keywords": ["版本", "同步", "配置"], "expected_sources": ["版本同步逻辑说明.md", "network-deploy-faults.md"]},
+  {"question": "视频内容下发失败", "expected_answer_keywords": ["视频", "下发", "网络", "存储"], "expected_sources": ["视频内容下发和删除逻辑说明.md", "network-deploy-faults.md"]},
+  {"question": "逻辑锁是什么意思？", "expected_answer_keywords": ["锁", "状态", "互斥"], "expected_sources": ["逻辑锁.md"]},
+  {"question": "冷凝器温度过高", "expected_answer_keywords": ["冷凝器", "温度", "散热", "清洁"], "expected_sources": ["hardware-module-faults.md"]},
+  {"question": "物料通道堵了", "expected_answer_keywords": ["通道", "堵塞", "清理"], "expected_sources": ["material-monitor-faults.md"]},
+  {"question": "测试报告怎么写？", "expected_answer_keywords": ["测试", "报告", "规范", "格式"], "expected_sources": ["测试报告规范-v1.md"]},
+  {"question": "扣盖机对不准", "expected_answer_keywords": ["扣盖", "对位", "校准"], "expected_sources": ["hardware-module-faults.md"]},
+  {"question": "中间件和硬件通信断开", "expected_answer_keywords": ["通信", "串口", "断开", "重连"], "expected_sources": ["middleware-faults.md"]},
+  {"question": "执行状态机怎么工作的？", "expected_answer_keywords": ["状态机", "状态", "转换"], "expected_sources": ["执行状态机说明.md"]}
+]
