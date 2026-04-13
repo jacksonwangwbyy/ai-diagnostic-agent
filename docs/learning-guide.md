@@ -37,22 +37,39 @@
 ai-diagnostic-agent/
 ├── src/
 │   ├── config/settings.py          # 配置管理
-│   ├── llm/client.py               # LLM 客户端（双模型）
+│   ├── llm/client.py               # LLM 客户端（双模型 + 降级）
 │   ├── rag/
 │   │   ├── loader.py               # 文档加载
 │   │   ├── splitter.py             # 文本切分
 │   │   ├── vectorstore.py          # 向量存储
+│   │   ├── reranker.py             # CrossEncoder 重排序
+│   │   ├── hybrid_search.py        # BM25 混合检索 + RRF 融合
 │   │   └── chain.py                # RAG 检索链
 │   ├── tools/
 │   │   ├── knowledge_search.py     # 知识库检索工具
 │   │   ├── log_reader.py           # SSH 日志读取工具
 │   │   ├── device_status.py        # 设备状态查询工具
-│   │   └── diagnosis_report.py     # 诊断报告生成工具
-│   ├── agent/diagnostic_agent.py   # ReAct Agent 编排
-│   ├── api/                        # FastAPI 服务
+│   │   ├── diagnosis_report.py     # 诊断报告生成工具
+│   │   ├── device_restart.py       # 设备服务重启工具
+│   │   └── firmware_check.py       # 固件版本检查工具
+│   ├── agent/
+│   │   ├── diagnostic_agent.py     # ReAct 诊断 Agent（6 工具）
+│   │   ├── repair_agent.py         # 维修建议 Agent
+│   │   ├── monitor_agent.py        # 设备监控 Agent
+│   │   └── supervisor.py           # Supervisor 多 Agent 编排
+│   ├── api/
+│   │   ├── app.py                  # FastAPI 入口
+│   │   ├── limiter.py              # API 限流
+│   │   ├── models.py               # 请求/响应模型
+│   │   └── routes.py               # API 路由
 │   └── main.py                     # CLI 入口
-├── knowledge-base/                 # 设备手册和故障案例
+├── knowledge-base/
+│   ├── device-manuals/             # 14 份设备手册
+│   └── fault-cases/                # 25 个故障案例（5 类）
+├── evaluation/                     # RAG 评估框架
+├── frontend/                       # React + Vite + TypeScript 前端
 ├── scripts/build_knowledge_base.py # 知识库构建脚本
+├── tests/                          # 133 个测试用例
 ├── Dockerfile
 └── docker-compose.yml
 ```
@@ -328,14 +345,16 @@ def search_knowledge_base(query: str) -> str:
 
 > description 写得好不好，直接影响 Agent 的智能程度。要写清楚"什么场景下该用这个工具"。
 
-### 四个工具
+### 六个工具
 
 | 工具 | 作用 | 数据来源 |
 |------|------|----------|
-| `query_device_status` | 查设备实时状态 | 模拟数据（后续接真实 API） |
+| `query_device_status` | 查设备实时状态 | bar_middleware 真实 API |
 | `fetch_device_logs` | 读取设备日志 | 本地文件 / SSH（可配置） |
-| `search_knowledge_base` | 检索知识库 | ChromaDB 向量检索 |
+| `search_knowledge_base` | 检索知识库（混合检索+重排序） | ChromaDB + BM25 + CrossEncoder |
 | `generate_diagnosis_report` | 生成诊断报告 | 格式化输出 |
+| `restart_device_service` | 重启设备服务 | SSH 命令白名单 |
+| `check_firmware_version` | 检查固件版本 | bar_middleware API |
 
 ### 日志读取的双模式设计 (`log_reader.py`)
 
@@ -713,11 +732,20 @@ uvicorn src.api.app:app --reload --port 8000
 
 ---
 
-## 下一步可以做什么
+## 下一步可以做什么（已全部完成 ✅）
 
-- 接入真实设备 API（替换 `device_status.py` 的模拟数据）
-- 添加更多工具（重启设备、推送固件更新等）
-- 前端界面（React/Vue + SSE 流式展示）
-- 对话记忆持久化（Redis 替代内存存储）
-- 多 Agent 协作（诊断 Agent + 修复 Agent + 监控 Agent）
-- 评估体系（自动评测 Agent 的诊断准确率）
+以下功能在项目后续迭代中均已实现：
+
+- ✅ 接入真实设备 API（`device_status.py` 已对接 bar_middleware 真实接口）
+- ✅ 添加更多工具（`device_restart.py` 重启服务、`firmware_check.py` 固件检查）
+- ✅ 前端界面（React + Vite + TypeScript + SSE 流式，含模型选择/多Agent开关/报告导出）
+- ✅ 对话记忆持久化（Redis 会话存储，自动降级到内存）
+- ✅ 多 Agent 协作（Supervisor + 诊断/维修/监控 Agent，支持链式调用）
+- ✅ 评估体系（`evaluation/run_eval.py`，Recall@K + MRR + 回答质量）
+- ✅ RAG 检索优化（CrossEncoder 重排序 + BM25 混合检索 + RRF 融合）
+- ✅ API 限流（slowapi，按端点分级限制）
+
+详细文档见：
+- `docs/usage-and-learning-guide.md` — 完整使用指南
+- `docs/api-guide.md` — API 集成指南
+- `docs/deployment-guide.md` — 部署最佳实践
