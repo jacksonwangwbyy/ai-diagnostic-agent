@@ -27,14 +27,18 @@ ai-diagnostic-agent/
 │   │   ├── loader.py              # 文档加载器（MD/PDF/TXT）
 │   │   ├── splitter.py            # 文本切分（标题切分+字符切分）
 │   │   ├── vectorstore.py         # ChromaDB 向量存储与检索
-│   │   └── chain.py               # RAG 检索链（检索+生成+引用）
+│   │   ├── reranker.py            # CrossEncoder 重排序
+│   │   ├── hybrid_search.py       # BM25 混合检索 + RRF 融合
+│   │   └── chain.py               # RAG 检索链（混合检索+生成+引用）
 │   ├── agent/                     # Agent 模块
 │   │   └── diagnostic_agent.py    # ReAct Agent（工具编排+多步推理）
 │   ├── tools/                     # 工具实现
-│   │   ├── knowledge_search.py    # 知识库检索工具
+│   │   ├── knowledge_search.py    # 知识库检索工具（混合检索+重排序）
 │   │   ├── log_reader.py          # 设备日志读取工具（local/ssh 双模式）
 │   │   ├── device_status.py       # 设备状态查询工具（对接 bar_middleware 真实 API）
-│   │   └── diagnosis_report.py    # 诊断报告生成工具
+│   │   ├── diagnosis_report.py    # 诊断报告生成工具
+│   │   ├── device_restart.py      # 设备服务重启工具（SSH 命令白名单）
+│   │   └── firmware_check.py      # 固件版本检查工具
 │   ├── api/                       # FastAPI 接口
 │   │   ├── app.py                 # FastAPI 应用入口
 │   │   ├── models.py              # 请求/响应数据模型
@@ -46,7 +50,11 @@ ai-diagnostic-agent/
 │   └── fault-cases/               # 历史故障案例
 ├── scripts/
 │   └── build_knowledge_base.py    # 一键构建知识库脚本
-├── tests/                         # 测试
+├── tests/                         # 测试（87+ 用例）
+├── evaluation/                    # RAG 评估框架
+│   ├── eval_dataset.json          # 20 组 Q&A 评估数据集
+│   ├── run_eval.py                # 自动评估脚本
+│   └── README.md                  # 评估使用说明
 ├── docs/                          # 文档 & 学习笔记
 ├── frontend/                      # React 前端（Vite + TypeScript + SSE）
 ├── .env.example                   # 环境变量模板
@@ -100,8 +108,8 @@ ai-diagnostic-agent/
 - [x] ChromaDB 向量存储与相似度检索
 - [x] 导入 14 个真实设备文档 → 434 个文档块
 - [x] RAG 问答链（检索 + Prompt 拼接 + LLM 生成 + 引用溯源）
-- [ ] 检索质量优化（Reranking、混合检索 — 留待 Phase 4）
-- [ ] RAG 评估（检索准确率、回答质量 — 留待 Phase 4）
+- [x] 检索质量优化（CrossEncoder Reranking + BM25 混合检索 + RRF 融合）
+- [x] RAG 评估体系（Recall@K、MRR、回答质量自动评估）
 
 **交付**：一键构建知识库 `python scripts/build_knowledge_base.py --local`
 
@@ -118,8 +126,10 @@ ai-diagnostic-agent/
 - [x] 实现 search_knowledge_base（RAG 检索）
 - [x] 实现 generate_diagnosis_report（结构化报告）
 - [x] ReAct 推理模式（LangGraph create_react_agent）
-- [x] 多工具协作编排（4 工具自主调度）
+- [x] 多工具协作编排（6 工具自主调度）
 - [x] Agent 执行过程可视化（CLI verbose 模式）
+- [x] 设备服务重启工具（SSH 命令白名单）
+- [x] 固件版本检查工具（API 查询）
 
 **交付**：`python -m src.main` Agent 模式，支持 `/agent` 和 `/chat` 切换
 
@@ -135,8 +145,8 @@ ai-diagnostic-agent/
 - [x] API 文档（Swagger，访问 /docs）
 - [x] Docker 容器化（Dockerfile + docker-compose.yml）
 - [x] Milvus 集成（docker-compose 中配置）
-- [ ] ChromaDB → Milvus 迁移（向量存储切换）
-- [ ] 多模型降级策略（provider A 失败自动切 B）
+- [x] ChromaDB → Milvus 迁移（向量存储切换）
+- [x] 多模型降级策略（provider A 失败自动切 B）
 - [x] 对话历史持久化（Redis，自动降级到内存）
 - [x] React 前端（Vite + TypeScript + SSE 流式 UI）
 
