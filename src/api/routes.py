@@ -85,7 +85,8 @@ async def diagnose(request: Request, req: DiagnoseRequest):
     try:
         # 多 Agent 协作模式
         if req.use_multi_agent:
-            result = await asyncio.get_event_loop().run_in_executor(
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
                 None, partial(run_multi_agent, req.question, req.provider, req.use_llm_routing)
             )
             return DiagnoseResponse(
@@ -97,9 +98,10 @@ async def diagnose(request: Request, req: DiagnoseRequest):
 
         # 单 Agent 模式（默认）
         agent = create_diagnostic_agent(req.provider)
-        result = agent.invoke({
-            "messages": [HumanMessage(content=req.question)],
-        })
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None, lambda: agent.invoke({"messages": [HumanMessage(content=req.question)]})
+        )
 
         messages = result["messages"]
 

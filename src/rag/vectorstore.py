@@ -122,21 +122,21 @@ def create_vector_store(
         return _create_chroma_store(embedding, documents)
 
 
-def search(query: str, k: int = 5) -> list[Document]:
-    """相似度检索"""
+def _get_vectorstore():
+    """获取向量存储实例（线程安全懒加载单例）"""
     global _cached_vectorstore
     if _cached_vectorstore is None:
         with _cache_lock:
             if _cached_vectorstore is None:
                 _cached_vectorstore = create_vector_store()
-    return _cached_vectorstore.similarity_search(query, k=k)
+    return _cached_vectorstore
+
+
+def search(query: str, k: int = 5) -> list[Document]:
+    """相似度检索"""
+    return _get_vectorstore().similarity_search(query, k=k)
 
 
 def search_with_scores(query: str, k: int = 5) -> list[tuple[Document, float]]:
     """带分数的检索（分数越小越相似）"""
-    global _cached_vectorstore
-    if _cached_vectorstore is None:
-        with _cache_lock:
-            if _cached_vectorstore is None:
-                _cached_vectorstore = create_vector_store()
-    return _cached_vectorstore.similarity_search_with_score(query, k=k)
+    return _get_vectorstore().similarity_search_with_score(query, k=k)

@@ -173,7 +173,8 @@ class DiagnosticChat:
 
         if not used_fallback:
             text = full_response.strip()
-            self.history.append(AIMessage(content=text))
+            if text:
+                self.history.append(AIMessage(content=text))
 
     def clear_history(self):
         """清空对话历史，保留系统提示词"""

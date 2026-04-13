@@ -7,6 +7,7 @@
 3. 错误处理 - 工具调用失败时要返回可理解的错误信息，而不是抛异常
 """
 import re
+import shlex
 import subprocess
 from pathlib import Path
 from langchain_core.tools import tool
@@ -89,7 +90,7 @@ def _read_ssh(log_type: str, lines: int, keyword: str) -> str:
         log_path = LOG_PATHS[log_type]
         if keyword:
             # 通过 SSH 传递参数列表：grep -i -e KEYWORD FILE
-            remote_cmd = f"grep -i -e {re.escape(keyword)} {log_path} | tail -n {lines}"
+            remote_cmd = f"grep -i -e {shlex.quote(keyword)} {log_path} | tail -n {lines}"
         else:
             remote_cmd = f"tail -n {lines} {log_path}"
         ssh_args = [remote_cmd]

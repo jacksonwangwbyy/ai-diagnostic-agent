@@ -16,7 +16,7 @@
 4. 工具注册：Agent 通过工具的 name 和 description 来决定何时调用哪个工具
    所以工具的 description 写得好不好，直接影响 Agent 的智能程度
 """
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
 
 from src.llm.client import create_llm, extract_text
@@ -129,4 +129,5 @@ def run_diagnosis(question: str, provider: str = None, verbose: bool = True) -> 
             print()
 
     # 返回最后一条 AI 消息
-    return extract_text(messages[-1].content)
+    ai_messages = [m for m in messages if isinstance(m, AIMessage) and m.content]
+    return extract_text(ai_messages[-1].content) if ai_messages else "Agent 未能生成诊断结论"

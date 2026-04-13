@@ -135,7 +135,7 @@ class RedisSessionStore:
         return bool(self._redis.delete(self._key(session_id)))
 
     def list_sessions(self) -> list[dict]:
-        keys = self._redis.keys(f"{self._prefix}*")
+        keys = list(self._redis.scan_iter(f"{self._prefix}*"))
         sessions = []
         for key in keys:
             sid = key.replace(self._prefix, "")
