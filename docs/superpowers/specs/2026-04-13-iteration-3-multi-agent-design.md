@@ -8,6 +8,10 @@
 
 从单 Agent 升级为 Supervisor 编排的多 Agent 协作系统。Supervisor 接收用户请求，根据意图路由到专业 Agent，汇总结果返回。
 
+> **实现说明（2026-04-13）：**
+> - Supervisor 使用函数路由而非 LangGraph StateGraph，功能等价且更简洁
+> - 多 Agent 响应字段扩展到现有 `DiagnoseResponse`（新增 `route`、`agents_used`），而非新增 `MultiAgentResponse`
+
 ## 架构
 
 ```
