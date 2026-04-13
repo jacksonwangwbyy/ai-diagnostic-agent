@@ -152,7 +152,9 @@ ai-diagnostic-agent/
 - [x] ChromaDB → Milvus 迁移（向量存储切换）
 - [x] 多模型降级策略（provider A 失败自动切 B）
 - [x] 对话历史持久化（Redis，自动降级到内存）
-- [x] React 前端（Vite + TypeScript + SSE 流式，基础原型）
+- [x] React 前端（Vite + TypeScript + SSE 流式，含模型选择/多Agent开关/报告导出/错误重试）
+- [x] API 限流（slowapi，按端点分级限制）
+- [x] 部署文档（deployment-guide.md + api-guide.md）
 
 **交付**：`uvicorn src.api.app:app` 或 `docker compose up`
 
