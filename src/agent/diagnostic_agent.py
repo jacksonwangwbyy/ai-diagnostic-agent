@@ -24,6 +24,8 @@ from src.tools.knowledge_search import search_knowledge_base
 from src.tools.log_reader import fetch_device_logs
 from src.tools.device_status import query_device_status
 from src.tools.diagnosis_report import generate_diagnosis_report
+from src.tools.device_restart import restart_device_service
+from src.tools.firmware_check import check_firmware_version
 
 
 # Agent 系统提示词
@@ -34,6 +36,8 @@ AGENT_SYSTEM_PROMPT = """你是 SMYZE 饮吧设备的智能故障诊断 Agent。
 2. 读取设备运行日志（fetch_device_logs）
 3. 检索设备知识库（search_knowledge_base）
 4. 生成故障诊断报告（generate_diagnosis_report）
+5. 重启设备服务（restart_device_service）
+6. 检查固件/软件版本（check_firmware_version）
 
 你的工作流程：
 1. 接收用户描述的故障现象
@@ -55,6 +59,8 @@ TOOLS = [
     fetch_device_logs,
     query_device_status,
     generate_diagnosis_report,
+    restart_device_service,
+    check_firmware_version,
 ]
 
 
