@@ -14,6 +14,7 @@ class TestMonitorAgent:
                 call_kwargs = mock_create.call_args[1]
                 assert call_kwargs["model"] == mock_llm
                 assert call_kwargs["prompt"] == MONITOR_SYSTEM_PROMPT
+                assert call_kwargs["tools"] == MONITOR_TOOLS
 
     def test_monitor_tools_count(self):
         assert len(MONITOR_TOOLS) == 3

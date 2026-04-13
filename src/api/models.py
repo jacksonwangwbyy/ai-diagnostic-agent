@@ -24,6 +24,7 @@ class DiagnoseRequest(BaseModel):
     provider: str = Field(default="claude", description="模型 provider")
     device_id: str = Field(default="BAR-001", description="设备编号")
     use_multi_agent: bool = Field(default=False, description="是否使用多 Agent 协作")
+    use_llm_routing: bool = Field(default=False, description="多 Agent 模式下使用 LLM 精确路由")
 
 
 class DiagnoseResponse(BaseModel):

@@ -16,6 +16,7 @@ class TestRepairAgent:
                 call_kwargs = mock_create.call_args[1]
                 assert call_kwargs["model"] == mock_llm
                 assert call_kwargs["prompt"] == REPAIR_SYSTEM_PROMPT
+                assert call_kwargs["tools"] == REPAIR_TOOLS
 
     def test_repair_tools_count(self):
         """维修 Agent 有 2 个工具"""

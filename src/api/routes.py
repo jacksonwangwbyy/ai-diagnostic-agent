@@ -8,6 +8,8 @@ API 路由
 4. 错误处理 - 统一的错误响应格式
 """
 import json
+import asyncio
+from functools import partial
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage, AIMessage
@@ -79,11 +81,14 @@ async def diagnose(req: DiagnoseRequest):
     try:
         # 多 Agent 协作模式
         if req.use_multi_agent:
-            result = run_multi_agent(req.question, req.provider)
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, partial(run_multi_agent, req.question, req.provider, req.use_llm_routing)
+            )
             return DiagnoseResponse(
                 result=result["result"],
                 route=result["route"],
                 agents_used=result["agents_used"],
+                # tools_used 和 steps 在多 Agent 模式下不收集
             )
 
         # 单 Agent 模式（默认）

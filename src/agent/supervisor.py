@@ -53,6 +53,8 @@ def _route_by_keywords(question: str) -> str:
         return "monitor"
     if has_repair and has_diagnose:
         return "diagnose+repair"
+    if has_monitor and has_diagnose:
+        return "diagnose"  # 监控+诊断意图，优先诊断
     return "diagnose"  # 默认
 
 
@@ -137,7 +139,7 @@ def run_multi_agent(
         diagnosis = _extract_final_answer(diag_result)
         agents_used.append("diagnostic")
 
-        repair_question = f"根据以下诊断结论，给出具体维修方案：\n\n{diagnosis}"
+        repair_question = f"设备故障描述：{question}\n\n诊断结论：\n{diagnosis}\n\n请给出具体维修方案。"
         repair_agent = create_repair_agent(provider)
         repair_result = repair_agent.invoke({"messages": [HumanMessage(content=repair_question)]})
         repair_plan = _extract_final_answer(repair_result)
