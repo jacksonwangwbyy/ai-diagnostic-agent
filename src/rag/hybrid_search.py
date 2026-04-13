@@ -90,16 +90,17 @@ def rrf_fuse(
 
     score(doc) = sum(1 / (k + rank_i)) for each list i
     """
-    doc_scores: dict[int, tuple[Document, float]] = {}
+    doc_scores: dict[str, tuple[Document, float]] = {}
 
     for ranked_list in ranked_lists:
         for rank, doc in enumerate(ranked_list, 1):
-            doc_id = id(doc)
-            if doc_id in doc_scores:
-                existing_doc, existing_score = doc_scores[doc_id]
-                doc_scores[doc_id] = (existing_doc, existing_score + 1.0 / (k + rank))
+            # 使用内容哈希去重，避免 id() 导致相同内容的不同对象无法合并
+            doc_key = hash((doc.page_content, doc.metadata.get("filename", "")))
+            if doc_key in doc_scores:
+                existing_doc, existing_score = doc_scores[doc_key]
+                doc_scores[doc_key] = (existing_doc, existing_score + 1.0 / (k + rank))
             else:
-                doc_scores[doc_id] = (doc, 1.0 / (k + rank))
+                doc_scores[doc_key] = (doc, 1.0 / (k + rank))
 
     sorted_docs = sorted(doc_scores.values(), key=lambda x: x[1], reverse=True)
     return [doc for doc, _ in sorted_docs[:top_k]]
@@ -190,5 +191,4 @@ def enhanced_search(
     else:
         reranked = []
 
-    # 返回 (doc, score) 格式（score 按排序位置递减）
-    return [(doc, 1.0 - i * (0.5 / max(len(reranked), 1))) for i, doc in enumerate(reranked)]
+    return reranked

@@ -32,7 +32,7 @@ def rerank(
     query: str,
     documents: list[Document],
     top_k: int = 5,
-) -> list[Document]:
+) -> list[tuple[Document, float]]:
     """
     对文档列表按与 query 的相关性重排序
 
@@ -42,7 +42,7 @@ def rerank(
         top_k: 返回前 k 个最相关的文档
 
     Returns:
-        按相关性降序排列的文档列表
+        [(Document, score), ...] 按相关性降序排列
     """
     if not documents:
         return []
@@ -54,4 +54,4 @@ def rerank(
     scored_docs = list(zip(documents, scores))
     scored_docs.sort(key=lambda x: x[1], reverse=True)
 
-    return [doc for doc, _ in scored_docs[:top_k]]
+    return [(doc, float(score)) for doc, score in scored_docs[:top_k]]

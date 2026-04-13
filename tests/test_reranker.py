@@ -19,8 +19,9 @@ class TestRerank:
         with patch("src.rag.reranker._get_reranker", return_value=mock_model):
             result = rerank("制冰机故障", docs, top_k=2)
             assert len(result) == 2
-            assert result[0].metadata["filename"] == "b.md"
-            assert result[1].metadata["filename"] == "a.md"
+            assert result[0][0].metadata["filename"] == "b.md"
+            assert result[1][0].metadata["filename"] == "a.md"
+            assert isinstance(result[0][1], float)
 
     def test_rerank_top_k_limit(self):
         """top_k 限制返回数量"""
@@ -46,3 +47,4 @@ class TestRerank:
         with patch("src.rag.reranker._get_reranker", return_value=mock_model):
             result = rerank("query", docs, top_k=5)
             assert len(result) == 1
+            assert result[0][1] == 0.5

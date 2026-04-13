@@ -114,7 +114,7 @@ class TestEnhancedSearch:
                 mock_bm25_inst.search.return_value = [mock_doc]
                 mock_bm25.return_value = mock_bm25_inst
 
-                with patch("src.rag.hybrid_search.rerank", side_effect=lambda q, d, top_k: d[:top_k]):
+                with patch("src.rag.hybrid_search.rerank", side_effect=lambda q, d, top_k: [(doc, 0.9) for doc in d[:top_k]]):
                     results = enhanced_search("制冰机故障", k=5)
                     assert len(results) >= 1
                     assert isinstance(results[0], tuple)
@@ -127,6 +127,6 @@ class TestEnhancedSearch:
 
         with patch("src.rag.hybrid_search.search_with_scores", return_value=mock_results):
             with patch("src.rag.hybrid_search._get_bm25_index", return_value=None):
-                with patch("src.rag.hybrid_search.rerank", side_effect=lambda q, d, top_k: d[:top_k]):
+                with patch("src.rag.hybrid_search.rerank", side_effect=lambda q, d, top_k: [(doc, 0.8) for doc in d[:top_k]]):
                     results = enhanced_search("查询", k=5)
                     assert len(results) >= 1

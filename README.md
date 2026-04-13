@@ -50,7 +50,7 @@ ai-diagnostic-agent/
 │   └── fault-cases/               # 历史故障案例
 ├── scripts/
 │   └── build_knowledge_base.py    # 一键构建知识库脚本
-├── tests/                         # 测试（87+ 用例）
+├── tests/                         # 测试（114 用例）
 ├── evaluation/                    # RAG 评估框架
 │   ├── eval_dataset.json          # 20 组 Q&A 评估数据集
 │   ├── run_eval.py                # 自动评估脚本

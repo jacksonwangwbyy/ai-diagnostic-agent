@@ -4,9 +4,12 @@
 通过 SSH 远程重启指定的设备服务。
 安全设计：只允许重启白名单中的服务，不允许执行任意命令。
 """
+import logging
 import subprocess
 from langchain_core.tools import tool
 from src.config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 # 服务重启命令白名单
 SERVICE_COMMANDS = {
@@ -34,6 +37,8 @@ def restart_device_service(service: str = "middleware") -> str:
         return f"不支持的服务: {service}。可选: {available}"
 
     command = SERVICE_COMMANDS[service]
+
+    logger.warning(f"执行服务重启: service={service}, target={settings.DEVICE_SSH_USER}@{settings.DEVICE_SSH_HOST}")
 
     ssh_cmd = [
         "ssh",
