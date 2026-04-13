@@ -608,6 +608,7 @@ def check_network_status(target: str = "baidu.com") -> str:
 | `supervisor.py` | 多 Agent 编排 | `run_multi_agent(question)` |
 | `diagnostic_agent.py` | Agent 编排核心 | `create_diagnostic_agent()` / `run_diagnosis()` |
 | `app.py` | FastAPI 入口 | `app` |
+| `limiter.py` | API 限流单例 | `limiter`（slowapi） |
 | `models.py` | 请求/响应模型 | `ChatRequest` / `DiagnoseResponse` / `RAGQueryResponse` |
 | `routes.py` | API 路由 | 7 个 REST 接口 |
 | `session_store.py` | 会话持久化 | `create_session_store()` / `RedisSessionStore` |

@@ -44,6 +44,7 @@ ai-diagnostic-agent/
 │   │   └── firmware_check.py      # 固件版本检查工具
 │   ├── api/                       # FastAPI 接口
 │   │   ├── app.py                 # FastAPI 应用入口
+│   │   ├── limiter.py             # API 限流（slowapi）
 │   │   ├── models.py              # 请求/响应数据模型
 │   │   └── routes.py              # API 路由（REST + SSE）
 │   ├── utils/                     # 工具函数

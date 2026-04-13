@@ -39,10 +39,19 @@ docker compose up -d
 | `ANTHROPIC_BASE_URL` | Claude 中转站地址 | 空（直连） |
 | `OPENAI_BASE_URL` | OpenAI 中转站地址 | 空（直连） |
 | `DEFAULT_LLM_PROVIDER` | 默认模型 | `claude` |
-| `LOG_READ_MODE` | 日志读取模式 | `local` |
-| `VECTOR_DB_TYPE` | 向量数据库 | `chromadb` |
-| `REDIS_URL` | Redis 连接地址 | `redis://localhost:6379/0` |
-| `CORS_ORIGINS` | 允许的前端域名 | `http://localhost:3000,http://localhost:5173` |
+| `LLM_FALLBACK_ENABLED` | 主模型失败时自动切换备用 | `true` |
+| `LOG_READ_MODE` | 日志读取模式（local/ssh） | `local` |
+| `DEVICE_SSH_HOST` | 设备 SSH 地址 | `192.168.42.1` |
+| `DEVICE_SSH_USER` | 设备 SSH 用户名 | `smyze` |
+| `DEVICE_SSH_KEY_PATH` | SSH 私钥路径 | `~/.ssh/id_rsa` |
+| `VECTOR_DB_TYPE` | 向量数据库（chromadb/milvus） | `chromadb` |
+| `CHROMA_PERSIST_DIR` | ChromaDB 持久化目录 | `./chroma_data` |
+| `MILVUS_HOST` | Milvus 地址 | `localhost` |
+| `MILVUS_PORT` | Milvus 端口 | `19530` |
+| `MIDDLEWARE_BASE_URL` | bar_middleware 地址 | `http://localhost:8003` |
+| `REDIS_URL` | Redis 连接地址（空=内存存储） | `redis://localhost:6379/0` |
+| `SESSION_TTL` | 会话过期时间（秒） | `3600` |
+| `CORS_ORIGINS` | 允许的前端域名（逗号分隔） | `http://localhost:3000,http://localhost:5173` |
 
 ## 知识库构建
 
