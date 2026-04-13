@@ -23,6 +23,7 @@ class DiagnoseRequest(BaseModel):
     question: str = Field(..., description="故障描述")
     provider: str = Field(default="claude", description="模型 provider")
     device_id: str = Field(default="BAR-001", description="设备编号")
+    use_multi_agent: bool = Field(default=False, description="是否使用多 Agent 协作")
 
 
 class DiagnoseResponse(BaseModel):
@@ -30,6 +31,8 @@ class DiagnoseResponse(BaseModel):
     result: str
     tools_used: list[str] = []
     steps: list[dict] = []
+    route: str = ""
+    agents_used: list[str] = []
 
 
 class RAGQueryRequest(BaseModel):

@@ -19,6 +19,7 @@ from src.api.models import (
 )
 from src.rag.chain import rag_query
 from src.agent.diagnostic_agent import create_diagnostic_agent
+from src.agent.supervisor import run_multi_agent
 from src.utils.session_store import create_session_store
 from src.llm.client import extract_text
 
@@ -76,6 +77,16 @@ async def chat_stream(req: ChatRequest):
 async def diagnose(req: DiagnoseRequest):
     """Agent 诊断（工具调用 + 多步推理）"""
     try:
+        # 多 Agent 协作模式
+        if req.use_multi_agent:
+            result = run_multi_agent(req.question, req.provider)
+            return DiagnoseResponse(
+                result=result["result"],
+                route=result["route"],
+                agents_used=result["agents_used"],
+            )
+
+        # 单 Agent 模式（默认）
         agent = create_diagnostic_agent(req.provider)
         result = agent.invoke({
             "messages": [HumanMessage(content=req.question)],
